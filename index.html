@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Facial Muscles — 3D Anatomy</title>
+<title>Facial Muscles — Massage Trainer</title>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -109,11 +109,11 @@
 
   .tab-btn {
     flex: 1;
-    padding: 11px 8px;
+    padding: 11px 6px;
     background: none;
     border: none;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.5px;
     cursor: pointer;
@@ -201,7 +201,7 @@
     font-size: 12px;
     color: var(--accent2);
     font-style: italic;
-    margin-bottom: 14px;
+    margin-bottom: 8px;
   }
 
   .info-label {
@@ -213,34 +213,22 @@
     margin-top: 12px;
   }
 
-  #muscle-function {
-    font-size: 13px;
-    line-height: 1.65;
-    color: #94a3b8;
-  }
-
-  #muscle-expressions {
-    font-size: 13px;
-    color: #a78bfa;
-    line-height: 1.55;
-  }
-
   /* ── Muscle List ── */
   #muscle-list {
     flex: 1;
     overflow-y: auto;
-    padding: 12px;
+    padding: 8px;
   }
 
   .muscle-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
+    gap: 8px;
+    padding: 8px 10px;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.15s;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
     border: 1px solid transparent;
   }
 
@@ -255,9 +243,99 @@
   }
 
   .muscle-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-  .muscle-item-name { font-size: 13px; color: var(--text); }
+  .muscle-item-name { font-size: 13px; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .muscle-item.selected .muscle-item-name { color: #fff; font-weight: 600; }
-  .muscle-item-arrow { margin-left: auto; color: var(--muted); font-size: 12px; }
+  .muscle-item-arrow { margin-left: auto; color: var(--muted); font-size: 12px; flex-shrink: 0; }
+
+  /* ── Pressure Badge ── */
+  .pressure-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .pressure-light { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+  .pressure-medium { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+  .pressure-deep { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+
+  /* ── Search & Filter Chips ── */
+  #search-area { padding: 10px 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  #muscle-search { width: 100%; padding: 7px 11px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; outline: none; }
+  #muscle-search:focus { border-color: var(--accent); }
+  #muscle-search::placeholder { color: var(--muted); }
+  .filter-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+  .chip { padding: 2px 8px; border-radius: 20px; font-size: 10px; cursor: pointer; border: 1px solid var(--border); background: none; color: var(--muted); transition: all 0.2s; }
+  .chip.active { background: rgba(59,130,246,0.15); border-color: var(--accent); color: var(--accent); }
+
+  /* ── Therapy Sections ── */
+  .therapy-section { margin-top: 11px; }
+  .therapy-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .therapy-label .icon { font-size: 12px; }
+  .therapy-text { font-size: 12px; line-height: 1.65; color: #94a3b8; }
+  .therapy-text.warning { color: #fbbf24; }
+
+  #add-session-btn {
+    width: 100%; margin-top: 14px; padding: 10px;
+    border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    border: 1px solid var(--accent);
+    background: rgba(59,130,246,0.1); color: var(--accent);
+  }
+  #add-session-btn.in-session {
+    background: rgba(16,185,129,0.1); border-color: #10b981; color: #10b981;
+  }
+
+  /* ── Session Tab ── */
+  #tab-session { overflow: hidden; display: flex; flex-direction: column; }
+  #session-panel { flex: 1; overflow-y: auto; padding: 12px; }
+  .session-muscle { display: flex; align-items: flex-start; gap: 8px; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; }
+  .session-muscle-info { flex: 1; min-width: 0; }
+  .session-muscle-name { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 3px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+  .session-muscle-technique { font-size: 11px; color: var(--muted); line-height: 1.4; }
+  .session-controls { padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; }
+  .btn-primary { flex: 1; padding: 9px; background: var(--accent); border: none; border-radius: 8px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .btn-ghost { padding: 9px 14px; background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 12px; cursor: pointer; }
+  .btn-ghost:hover { border-color: #ef4444; color: #ef4444; }
+  #session-empty { text-align: center; padding: 32px 16px; color: var(--muted); font-size: 13px; line-height: 1.8; }
+
+  /* ── Massage Points Overlay ── */
+  #massage-overlay {
+    position: absolute; inset: 0; pointer-events: none;
+    display: none; z-index: 5;
+  }
+  #massage-overlay.active {
+    display: flex; align-items: center; justify-content: center;
+  }
+  #massage-overlay svg {
+    max-width: 320px; max-height: 480px; opacity: 0.85;
+  }
+  .massage-point-dot {
+    fill: #3b82f6; stroke: #fff; stroke-width: 1.5;
+    cursor: default;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { r: 6; opacity: 0.9; }
+    50% { r: 8; opacity: 1; }
+  }
+  .massage-point-label {
+    fill: #e2e8f0; font-size: 9px; font-family: system-ui;
+  }
+  #massage-toggle {
+    position: absolute; top: 12px; left: 12px; z-index: 6;
+    padding: 7px 14px;
+    background: rgba(10,16,32,0.85);
+    border: 1px solid var(--border);
+    border-radius: 8px; color: var(--muted);
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    backdrop-filter: blur(8px); transition: all 0.2s;
+  }
+  #massage-toggle.active {
+    border-color: var(--accent); color: var(--accent);
+    background: rgba(59,130,246,0.1);
+  }
 
   /* ── Bottom tip ── */
   #controls-tip {
@@ -273,15 +351,19 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(99,165,255,0.25); border-radius: 4px; }
 
-  #empty-state {
-    text-align: center;
-    padding: 32px 16px;
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.8;
+  /* ── Print Styles ── */
+  @media print {
+    body { background: white; color: black; display: block; }
+    #viewer-wrap, #sidebar-header, #tabs, #tab-muscles, #tab-layers, #tab-info, #controls-tip, #massage-toggle { display: none !important; }
+    #sidebar { width: 100%; border: none; background: white; }
+    #tab-session { display: block !important; }
+    #session-panel { overflow: visible; }
+    .session-controls { display: none; }
+    .session-muscle { border: 1px solid #ddd; break-inside: avoid; margin-bottom: 8px; background: none; }
+    .session-muscle-name { color: black; }
+    .session-muscle-technique { color: #555; }
+    .btn-primary, .btn-ghost { display: none; }
   }
-
-  #empty-state .icon { font-size: 32px; margin-bottom: 12px; }
 </style>
 </head>
 <body>
@@ -292,6 +374,121 @@
     <div class="loader-ring"></div>
     <div class="loader-text">Loading anatomical model…</div>
   </div>
+
+  <button id="massage-toggle" onclick="toggleMassagePoints()">⊕ Massage Points</button>
+
+  <div id="massage-overlay">
+    <svg viewBox="0 0 400 430" xmlns="http://www.w3.org/2000/svg">
+      <!-- Background dim -->
+      <rect width="400" height="430" fill="rgba(6,10,20,0.72)" rx="12"/>
+
+      <!-- Head oval -->
+      <ellipse cx="200" cy="195" rx="118" ry="148" fill="none" stroke="rgba(99,165,255,0.35)" stroke-width="1.5"/>
+
+      <!-- Ears -->
+      <ellipse cx="84" cy="195" rx="12" ry="22" fill="none" stroke="rgba(99,165,255,0.25)" stroke-width="1.2"/>
+      <ellipse cx="316" cy="195" rx="12" ry="22" fill="none" stroke="rgba(99,165,255,0.25)" stroke-width="1.2"/>
+
+      <!-- Neck -->
+      <line x1="168" y1="340" x2="155" y2="390" stroke="rgba(99,165,255,0.2)" stroke-width="1.2"/>
+      <line x1="232" y1="340" x2="245" y2="390" stroke="rgba(99,165,255,0.2)" stroke-width="1.2"/>
+
+      <!-- Eyebrows -->
+      <path d="M152,150 Q170,143 188,148" fill="none" stroke="rgba(226,232,240,0.4)" stroke-width="1.5"/>
+      <path d="M212,148 Q230,143 248,150" fill="none" stroke="rgba(226,232,240,0.4)" stroke-width="1.5"/>
+
+      <!-- Eyes -->
+      <ellipse cx="170" cy="165" rx="18" ry="9" fill="none" stroke="rgba(226,232,240,0.35)" stroke-width="1.2"/>
+      <ellipse cx="230" cy="165" rx="18" ry="9" fill="none" stroke="rgba(226,232,240,0.35)" stroke-width="1.2"/>
+
+      <!-- Nose -->
+      <path d="M200,172 L194,210 Q200,216 206,210 Z" fill="none" stroke="rgba(226,232,240,0.3)" stroke-width="1.2"/>
+
+      <!-- Mouth -->
+      <path d="M182,250 Q200,264 218,250" fill="none" stroke="rgba(226,232,240,0.35)" stroke-width="1.5"/>
+
+      <!-- Chin line -->
+      <path d="M175,295 Q200,315 225,295" fill="none" stroke="rgba(226,232,240,0.2)" stroke-width="1"/>
+
+      <!-- ── Massage Points (18 muscles) ── -->
+
+      <!-- 1. Frontalis — forehead center -->
+      <circle class="massage-point-dot" cx="200" cy="95" r="6"/>
+      <text class="massage-point-label" x="210" y="92">1 Frontalis</text>
+
+      <!-- 2. Temporalis — temple left -->
+      <circle class="massage-point-dot" cx="108" cy="155" r="6"/>
+      <text class="massage-point-label" x="73" y="148">2 Temporalis</text>
+
+      <!-- 3. Orbicularis Oculi — left eye -->
+      <circle class="massage-point-dot" cx="152" cy="162" r="6"/>
+      <text class="massage-point-label" x="105" y="170">3 Orb. Oculi</text>
+
+      <!-- 4. Corrugator — inner brow left -->
+      <circle class="massage-point-dot" cx="178" cy="152" r="6"/>
+      <text class="massage-point-label" x="184" y="147">4 Corrugator</text>
+
+      <!-- 5. Procerus — nasal bridge -->
+      <circle class="massage-point-dot" cx="200" cy="168" r="6"/>
+      <text class="massage-point-label" x="208" y="165">5 Procerus</text>
+
+      <!-- 6. Nasalis — side of nose left -->
+      <circle class="massage-point-dot" cx="187" cy="196" r="6"/>
+      <text class="massage-point-label" x="143" y="193">6 Nasalis</text>
+
+      <!-- 7. Levator Labii — upper lip/cheek left -->
+      <circle class="massage-point-dot" cx="176" cy="216" r="6"/>
+      <text class="massage-point-label" x="123" y="214">7 Lev. Labii</text>
+
+      <!-- 8. Zygomaticus Major — cheek diagonal left -->
+      <circle class="massage-point-dot" cx="148" cy="208" r="6"/>
+      <text class="massage-point-label" x="84" y="206">8 Zyg. Major</text>
+
+      <!-- 9. Zygomaticus Minor — inner cheek left -->
+      <circle class="massage-point-dot" cx="160" cy="220" r="6"/>
+      <text class="massage-point-label" x="99" y="232">9 Zyg. Minor</text>
+
+      <!-- 10. Masseter — jaw left -->
+      <circle class="massage-point-dot" cx="135" cy="240" r="6"/>
+      <text class="massage-point-label" x="82" y="245">10 Masseter</text>
+
+      <!-- 11. Buccinator — cheek left -->
+      <circle class="massage-point-dot" cx="152" cy="232" r="6"/>
+      <text class="massage-point-label" x="156" y="243">11 Buccinator</text>
+
+      <!-- 12. Orbicularis Oris — around mouth -->
+      <circle class="massage-point-dot" cx="200" cy="252" r="6"/>
+      <text class="massage-point-label" x="208" y="249">12 Orb. Oris</text>
+
+      <!-- 13. Risorius — lateral mouth left -->
+      <circle class="massage-point-dot" cx="165" cy="250" r="6"/>
+      <text class="massage-point-label" x="113" y="258">13 Risorius</text>
+
+      <!-- 14. Depressor Anguli Oris — mouth corner left -->
+      <circle class="massage-point-dot" cx="172" cy="265" r="6"/>
+      <text class="massage-point-label" x="107" y="275">14 Dep. Anguli</text>
+
+      <!-- 15. Depressor Labii — lower lip -->
+      <circle class="massage-point-dot" cx="200" cy="270" r="6"/>
+      <text class="massage-point-label" x="208" y="267">15 Dep. Labii</text>
+
+      <!-- 16. Mentalis — chin -->
+      <circle class="massage-point-dot" cx="200" cy="288" r="6"/>
+      <text class="massage-point-label" x="208" y="285">16 Mentalis</text>
+
+      <!-- 17. Platysma — neck -->
+      <circle class="massage-point-dot" cx="200" cy="322" r="6"/>
+      <text class="massage-point-label" x="208" y="319">17 Platysma</text>
+
+      <!-- 18. Auricularis — ear left -->
+      <circle class="massage-point-dot" cx="88" cy="196" r="6"/>
+      <text class="massage-point-label" x="52" y="192">18 Auricularis</text>
+
+      <!-- Legend title -->
+      <text x="200" y="420" text-anchor="middle" fill="rgba(100,116,139,0.8)" font-size="9" font-family="system-ui">Left-side anatomy shown · mirror for right side</text>
+    </svg>
+  </div>
+
   <iframe
     id="api-frame"
     allow="autoplay; fullscreen; xr-spatial-tracking"
@@ -307,18 +504,33 @@
 <!-- Sidebar -->
 <div id="sidebar">
   <div id="sidebar-header">
-    <h1>🧠 Facial Anatomy</h1>
-    <p>Interactive 3D Muscle Reference</p>
+    <h1>💆 Massage Trainer</h1>
+    <p>Facial Muscles — Therapy Reference</p>
   </div>
 
   <div id="tabs">
     <button class="tab-btn active" data-tab="muscles">Muscles</button>
     <button class="tab-btn" data-tab="layers">Layers</button>
     <button class="tab-btn" data-tab="info">Info</button>
+    <button class="tab-btn" data-tab="session">Session</button>
   </div>
 
   <!-- Muscles Tab -->
   <div class="tab-panel active" id="tab-muscles" style="overflow:hidden; display:flex; flex-direction:column;">
+    <div id="search-area">
+      <input id="muscle-search" type="text" placeholder="🔍 Search muscles or benefits…" oninput="filterMuscles()">
+      <div class="filter-chips">
+        <button class="chip active" data-region="all" onclick="setRegionFilter(this, 'all')">All</button>
+        <button class="chip" data-region="forehead" onclick="setRegionFilter(this, 'forehead')">Forehead</button>
+        <button class="chip" data-region="eye" onclick="setRegionFilter(this, 'eye')">Eye</button>
+        <button class="chip" data-region="nose" onclick="setRegionFilter(this, 'nose')">Nose</button>
+        <button class="chip" data-region="cheek" onclick="setRegionFilter(this, 'cheek')">Cheek</button>
+        <button class="chip" data-region="jaw" onclick="setRegionFilter(this, 'jaw')">Jaw</button>
+        <button class="chip" data-region="mouth" onclick="setRegionFilter(this, 'mouth')">Mouth</button>
+        <button class="chip" data-region="neck" onclick="setRegionFilter(this, 'neck')">Neck</button>
+        <button class="chip" data-region="ear" onclick="setRegionFilter(this, 'ear')">Ear</button>
+      </div>
+    </div>
     <div id="muscle-list"></div>
   </div>
 
@@ -383,11 +595,58 @@
       <div id="muscle-card">
         <div id="muscle-title" style="color:#475569">Select a muscle</div>
         <div id="muscle-latin"></div>
-        <div class="info-label">Function</div>
-        <div id="muscle-function">Click any muscle in the list or on the 3D model to see detailed anatomical information.</div>
-        <div class="info-label">Controls Expressions</div>
-        <div id="muscle-expressions" style="color:#475569">—</div>
+        <div id="muscle-pressure-display"></div>
+
+        <div class="therapy-section">
+          <div class="therapy-label"><span class="icon">📍</span> Palpation Point</div>
+          <div class="therapy-text" id="muscle-palpation">Click a muscle to see therapy information.</div>
+        </div>
+        <div class="therapy-section">
+          <div class="therapy-label"><span class="icon">✋</span> Massage Technique</div>
+          <div class="therapy-text" id="muscle-technique">—</div>
+        </div>
+        <div class="therapy-section">
+          <div class="therapy-label"><span class="icon">⚡</span> Tension Patterns</div>
+          <div class="therapy-text" id="muscle-tension">—</div>
+        </div>
+        <div class="therapy-section">
+          <div class="therapy-label"><span class="icon">✨</span> Treatment Benefits</div>
+          <div class="therapy-text" id="muscle-benefits">—</div>
+        </div>
+        <div class="therapy-section">
+          <div class="therapy-label"><span class="icon">👤</span> Client Indicators</div>
+          <div class="therapy-text" id="muscle-indicators">—</div>
+        </div>
+        <div class="therapy-section">
+          <div class="therapy-label"><span class="icon">⚠️</span> Contraindications</div>
+          <div class="therapy-text warning" id="muscle-contra">—</div>
+        </div>
+
+        <div class="therapy-section" style="margin-top:10px; border-top: 1px solid var(--border); padding-top: 12px;">
+          <div class="therapy-label">Anatomical Function</div>
+          <div class="therapy-text" id="muscle-function">—</div>
+        </div>
+        <div class="therapy-section">
+          <div class="therapy-label">Controls Expressions</div>
+          <div class="therapy-text" id="muscle-expressions" style="color:#a78bfa">—</div>
+        </div>
+
+        <button id="add-session-btn" onclick="toggleMuscleInSession()" style="display:none">+ Add to Session</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Session Tab -->
+  <div class="tab-panel" id="tab-session">
+    <div id="session-panel">
+      <div id="session-empty">
+        <div style="font-size:28px;margin-bottom:10px">📋</div>
+        No muscles added yet.<br>Select a muscle and click<br>"Add to Session" to begin.
+      </div>
+    </div>
+    <div class="session-controls">
+      <button class="btn-primary" onclick="printSession()">🖨 Print Session</button>
+      <button class="btn-ghost" onclick="clearSession()">Clear</button>
     </div>
   </div>
 
@@ -401,64 +660,243 @@
 <script>
 // ── Muscle Data ──────────────────────────────────────────────────────────────
 const MUSCLES = [
-  { id: 'frontalis', name: 'Frontalis', latin: 'M. frontalis', color: '#f59e0b',
+  {
+    id: 'frontalis', name: 'Frontalis', latin: 'M. frontalis', color: '#f59e0b',
     function: 'Elevates the eyebrows and wrinkles the forehead horizontally. The primary elevator of the upper eyelid and brow.',
-    expressions: 'Surprise, fear, worry, skepticism (raised brow), concentration' },
-  { id: 'temporalis', name: 'Temporalis', latin: 'M. temporalis', color: '#ef4444',
+    expressions: 'Surprise, fear, worry, skepticism (raised brow), concentration',
+    region: 'forehead', pressure: 'light',
+    palpation: 'Place fingertips horizontally across the forehead from hairline to brow; muscle runs vertically, fully palpable at rest',
+    technique: 'Slow effleurage strokes upward from brow to hairline; gentle horizontal petrissage across the full width; finish with still-point hold at center forehead',
+    tensionPatterns: 'Holds chronic "worry" tension; often contracted in clients who habitually raise brows; creates horizontal forehead lines over time',
+    benefits: 'Reduces forehead lines and tension headaches; eases eye strain; promotes parasympathetic relaxation response',
+    clientIndicators: 'Client reports forehead tightness, tension headaches, difficulty relaxing brow; visible horizontal lines at rest',
+    contraindications: 'Avoid if recent Botox injection in forehead area (wait 2 weeks minimum); gentle only over recent scar tissue',
+    benefitTags: ['tension headache', 'eye strain', 'forehead lines', 'stress relief']
+  },
+  {
+    id: 'temporalis', name: 'Temporalis', latin: 'M. temporalis', color: '#ef4444',
     function: 'Fan-shaped muscle on the temple. Elevates the mandible (closes jaw) and retracts it. One of the four muscles of mastication.',
-    expressions: 'Chewing, biting, clenching, jaw retraction' },
-  { id: 'orb-oculi', name: 'Orbicularis Oculi', latin: 'M. orbicularis oculi', color: '#8b5cf6',
+    expressions: 'Chewing, biting, clenching, jaw retraction',
+    region: 'ear', pressure: 'medium',
+    palpation: 'Fan-shaped muscle covering the temporal fossa; locate by asking client to clench jaw — muscle visibly contracts; palpate with flat fingers over temple, anterior to ear',
+    technique: 'Circular friction with flat fingers over entire temporal region; deeper petrissage along muscle fibers (superior to inferior); use knuckle drag from temple toward zygomatic arch; release jaw with slow inferior traction',
+    tensionPatterns: 'Primary site for stress-bracing and teeth-grinding tension; anterior fibers frequently develop trigger points that refer pain to upper teeth and behind the eye',
+    benefits: 'Reduces TMJ pain, jaw clenching, and stress headaches; can alleviate referred tooth pain; improves jaw range of motion',
+    clientIndicators: 'Client reports temple headaches, jaw fatigue, teeth grinding, waking with sore jaw, referred pain to upper teeth',
+    contraindications: 'Use caution if client has TMJ disc displacement (work proximal only); avoid deep pressure directly over temporal artery',
+    benefitTags: ['TMJ relief', 'jaw tension', 'temple headache', 'teeth grinding']
+  },
+  {
+    id: 'orb-oculi', name: 'Orbicularis Oculi', latin: 'M. orbicularis oculi', color: '#8b5cf6',
     function: 'Sphincter muscle surrounding the eye. Orbital part closes eye forcefully; palpebral part blinks; lacrimal part assists tear drainage.',
-    expressions: 'Blinking, squinting, winking, forced closure (pain/sleep)' },
-  { id: 'corrugator', name: 'Corrugator Supercilii', latin: 'M. corrugator supercilii', color: '#06b6d4',
+    expressions: 'Blinking, squinting, winking, forced closure (pain/sleep)',
+    region: 'eye', pressure: 'light',
+    palpation: 'Circular muscle encircling the orbit; palpable as the soft tissue rim around the bony orbit; distinguish orbital (outer) from palpebral (eyelid) portions',
+    technique: 'Use ring fingers only — lightest touch; slow circular effleurage around orbital rim following bone; gentle supraorbital ridge press-and-slide; never apply pressure directly on eyelid or eyeball',
+    tensionPatterns: 'Squinting tension from screen use; chronic contraction from light sensitivity; palpebral portion often tight in clients with insomnia',
+    benefits: 'Relieves eye strain and periorbital tension; reduces appearance of crow\'s feet; supports lymphatic drainage around eye; can ease tension-type sinus pressure',
+    clientIndicators: 'Client reports eye strain, puffiness around eyes, difficulty relaxing eye area, frequent squinting, screen fatigue',
+    contraindications: 'Never press directly on eyeball; avoid if active conjunctivitis, recent eye surgery, or retinal detachment history; no pressure on eyelids',
+    benefitTags: ['eye strain', 'screen fatigue', 'puffiness', 'sinus pressure']
+  },
+  {
+    id: 'corrugator', name: 'Corrugator Supercilii', latin: 'M. corrugator supercilii', color: '#06b6d4',
     function: 'Small pyramid-shaped muscle at medial brow. Draws eyebrows downward and inward creating vertical glabellar frown lines.',
-    expressions: 'Frowning, concentration, anger, pain, bright light' },
-  { id: 'procerus', name: 'Procerus', latin: 'M. procerus', color: '#10b981',
+    expressions: 'Frowning, concentration, anger, pain, bright light',
+    region: 'eye', pressure: 'light',
+    palpation: 'Locate at medial end of brow — small, firm muscle under the brow head; palpate by gently pressing inward and slightly upward between brow and bony orbital rim',
+    technique: 'Pinch-and-roll technique along medial brow; use thumb and index finger; slow horizontal friction to soften the glabellar region; combine with gentle upward lifting to counteract habitual downward pull',
+    tensionPatterns: 'The "frown muscle" — holds chronic contraction in concentrators, chronic pain sufferers, and high-stress individuals; creates vertical "11 lines" between brows',
+    benefits: 'Releases glabellar tension; softens expression lines between brows; reduces frontal headache; deeply calming due to reflex connection to nervous system',
+    clientIndicators: 'Client has visible "11 lines" at rest; reports brow tension, frontal headache, difficulty relaxing brow furrow',
+    contraindications: 'Avoid if recent filler or Botox between brows; work gently — overlies supratrochlear nerve and artery',
+    benefitTags: ['frown lines', 'frontal headache', 'brow tension', 'stress relief']
+  },
+  {
+    id: 'procerus', name: 'Procerus', latin: 'M. procerus', color: '#10b981',
     function: 'Pulls the medial angle of the eyebrow downward, creating horizontal wrinkles across the nasal bridge.',
-    expressions: 'Disgust, concentration, "bunnying" the nose, squinting in sun' },
-  { id: 'nasalis', name: 'Nasalis', latin: 'M. nasalis', color: '#f97316',
+    expressions: 'Disgust, concentration, "bunnying" the nose, squinting in sun',
+    region: 'nose', pressure: 'light',
+    palpation: 'Small pyramidal muscle at nasal bridge between brows; palpate by pressing gently at the junction of nose and forehead — feels like a small, firm ridge',
+    technique: 'Very light pinch along nasal bridge; slow upward effleurage from nasal tip to glabella; finish with gentle hold at nasal bridge to encourage release',
+    tensionPatterns: 'Contracts with sustained concentration or squinting; often co-contracts with corrugator; contributes to "bunny lines" across nose bridge',
+    benefits: 'Eases nasal bridge tension; reduces concentration-related frown lines; supports sinus drainage when combined with adjacent work',
+    clientIndicators: 'Client reports tightness at nasal bridge; habitual nose-scrunching; combined with corrugator tension in desk workers',
+    contraindications: 'Avoid deep pressure — overlies nasal bone; work superficially only',
+    benefitTags: ['nasal bridge tension', 'frown lines', 'sinus relief', 'concentration tension']
+  },
+  {
+    id: 'nasalis', name: 'Nasalis', latin: 'M. nasalis', color: '#f97316',
     function: 'Two parts: transverse (compresses nares) and alar (dilates nares). Controls nostril opening and closing.',
-    expressions: 'Flaring nostrils, sniffing, disgust, intense effort' },
-  { id: 'levator-labii', name: 'Levator Labii Superioris', latin: 'M. levator labii superioris', color: '#84cc16',
+    expressions: 'Flaring nostrils, sniffing, disgust, intense effort',
+    region: 'nose', pressure: 'light',
+    palpation: 'Along the lateral sides of the nose; transverse portion across nasal dorsum, alar portion at nostrils; palpate with single fingertip along nose side',
+    technique: 'Light effleurage along the length of the nose; tiny circular movements at alar margins; combine with nasal drainage techniques (supero-lateral strokes from midline outward)',
+    tensionPatterns: 'Often tight in mouth-breathers; connected to chronic sinus congestion; alar portion may be reactive in clients with allergies',
+    benefits: 'Supports nasal breathing; aids sinus drainage; reduces nasal congestion; useful in facial lymphatic drainage protocols',
+    clientIndicators: 'Client is a mouth breather, reports nasal stuffiness, chronic sinus pressure, or nasal passage restriction',
+    contraindications: 'Avoid if active sinus infection; very light work only — nasal cartilage is delicate',
+    benefitTags: ['sinus relief', 'nasal breathing', 'lymphatic drainage', 'congestion']
+  },
+  {
+    id: 'levator-labii', name: 'Levator Labii Superioris', latin: 'M. levator labii superioris', color: '#84cc16',
     function: 'Elevates the upper lip and deepens the nasolabial fold. Also elevates the wing of the nose (alar part).',
-    expressions: 'Sneering, contempt, lip curl, disgust, crying' },
-  { id: 'zyg-major', name: 'Zygomaticus Major', latin: 'M. zygomaticus major', color: '#ec4899',
+    expressions: 'Sneering, contempt, lip curl, disgust, crying',
+    region: 'nose', pressure: 'light',
+    palpation: 'Between cheekbone and upper lip; locate at the nasolabial fold, 1-2cm below the inner cheekbone; feel for the cordlike structure running vertically',
+    technique: 'Light upward effleurage along the nasolabial groove; gentle cross-fiber friction on the muscle belly; slow lifting strokes to counteract chronic shortening',
+    tensionPatterns: 'Often shortened in clients with chronic stress expression (lip curl); contributes to deepening of nasolabial folds over time',
+    benefits: 'Softens nasolabial folds; releases upper lip tension; useful in facial symmetry work; supports lymphatic drainage of mid-face',
+    clientIndicators: 'Deep nasolabial folds; upper lip tension; asymmetric smile; history of sinus issues or allergies',
+    contraindications: 'Avoid if active dental infection or recent upper lip surgery; work gently near infraorbital foramen (nerve exit point below eye)',
+    benefitTags: ['nasolabial folds', 'upper lip tension', 'facial symmetry', 'mid-face lift']
+  },
+  {
+    id: 'zyg-major', name: 'Zygomaticus Major', latin: 'M. zygomaticus major', color: '#ec4899',
     function: 'The primary smiling muscle. Extends from zygomatic bone to corner of mouth, pulling it superiorly and laterally.',
-    expressions: 'Smiling, laughing, happiness, joy — Duchenne smile (genuine)' },
-  { id: 'zyg-minor', name: 'Zygomaticus Minor', latin: 'M. zygomaticus minor', color: '#f472b6',
+    expressions: 'Smiling, laughing, happiness, joy — Duchenne smile (genuine)',
+    region: 'cheek', pressure: 'light',
+    palpation: 'Diagonal muscle from zygomatic bone to mouth corner; palpate along the line from cheekbone to corner of mouth — feel it contract when client smiles',
+    technique: 'Diagonal effleurage following muscle fiber direction (inferior-medial to superior-lateral); gentle petrissage along the cheek; use this muscle as a roadmap for full cheek massage',
+    tensionPatterns: 'Can hold tension in clients who force smiling (customer-facing roles); often asymmetric; compensatory tension with masseter work',
+    benefits: 'Lifts and tones cheek; reduces habitual tension from forced expression; improves facial symmetry; enhances blood flow to mid-face',
+    clientIndicators: 'Asymmetric smile; cheek fatigue after prolonged speaking or social situations; visible facial asymmetry',
+    contraindications: 'Avoid deep pressure directly over parotid gland (just anterior to ear); work with client permission for cheek area',
+    benefitTags: ['facial lifting', 'cheek tone', 'facial symmetry', 'mid-face circulation']
+  },
+  {
+    id: 'zyg-minor', name: 'Zygomaticus Minor', latin: 'M. zygomaticus minor', color: '#f472b6',
     function: 'Elevates the upper lip and deepens the nasolabial fold. Assists zygomaticus major in smiling expressions.',
-    expressions: 'Smiling (subtle), sadness, grief' },
-  { id: 'masseter', name: 'Masseter', latin: 'M. masseter', color: '#dc2626',
+    expressions: 'Smiling (subtle), sadness, grief',
+    region: 'cheek', pressure: 'light',
+    palpation: 'Medial to zygomaticus major; locate just below the inner cheekbone, slightly medial to the major; use same contraction test (smile) to differentiate',
+    technique: 'Fine circular effleurage just below cheekbone; short upward strokes from nasolabial fold toward cheekbone; combine with major for full cheek treatment',
+    tensionPatterns: 'Often co-contracts with levator labii; contributes to nasolabial fold depth; may hold grief/sadness expression patterns',
+    benefits: 'Softens nasolabial folds; smooths mid-cheek; supports emotional release work; contributes to overall cheek lifting',
+    clientIndicators: 'Deep nasolabial folds; mid-cheek tension; asymmetric upper lip; history of habitual sad expression',
+    contraindications: 'As with zygomaticus major — avoid deep pressure near parotid; gentle near infraorbital nerve',
+    benefitTags: ['nasolabial folds', 'cheek tone', 'emotional release', 'facial symmetry']
+  },
+  {
+    id: 'masseter', name: 'Masseter', latin: 'M. masseter', color: '#dc2626',
     function: 'The strongest chewing muscle. Superficial head closes jaw; deep head also retracts it. Easily palpable when clenching.',
-    expressions: 'Chewing, biting, jaw clenching (anger/stress), teeth grinding' },
-  { id: 'buccinator', name: 'Buccinator', latin: 'M. buccinator', color: '#7c3aed',
+    expressions: 'Chewing, biting, jaw clenching (anger/stress), teeth grinding',
+    region: 'jaw', pressure: 'medium',
+    palpation: 'Most palpable facial muscle — place fingers at angle of jaw, ask client to clench; feel the prominent bulge; superficial head from zygomatic arch to mandible body, deep head posterior',
+    technique: 'Begin with effleurage over entire muscle from zygomatic arch to mandible; progress to cross-fiber friction on superficial head; slow circular petrissage on muscle belly; intraoral technique (gloved finger inside cheek) for deep access if trained; finish with jaw traction (gentle inferior pull on mandible)',
+    tensionPatterns: 'THE primary stress-holding muscle of the face; bruxism, clenching, jaw guarding all manifest here; trigger points in the masseter refer pain to the ear, cheek, and molars; almost universally tight in stressed clients',
+    benefits: 'Reduces TMJ pain, jaw clenching, ear pain, referred tooth pain; improves jaw opening range; dramatically reduces overall facial tension; linked to headache relief',
+    clientIndicators: 'Client reports jaw clenching, teeth grinding, TMJ clicking/pain, ear fullness, headaches, difficulty opening wide, sore jaw on waking',
+    contraindications: 'Avoid deep pressure if acute TMJ inflammation; no intraoral technique without specific TMJ training; avoid if recent jaw surgery or dental procedure',
+    benefitTags: ['TMJ relief', 'jaw clenching', 'teeth grinding', 'headache', 'ear pain']
+  },
+  {
+    id: 'buccinator', name: 'Buccinator', latin: 'M. buccinator', color: '#7c3aed',
     function: 'Horizontal muscle in the cheek wall. Keeps food between molars, compresses cheeks, and retracts mouth corners.',
-    expressions: 'Blowing, whistling, sucking, trumpet playing, feeding' },
-  { id: 'orb-oris', name: 'Orbicularis Oris', latin: 'M. orbicularis oris', color: '#e11d48',
+    expressions: 'Blowing, whistling, sucking, trumpet playing, feeding',
+    region: 'cheek', pressure: 'light',
+    palpation: 'Deep cheek muscle forming the cheek wall; palpate by pressing fingers gently into the cheek interior (between upper and lower molars on outer cheek surface); feel the firm, flat muscle beneath subcutaneous fat',
+    technique: 'Gentle circular compression through cheek; small petrissage circles on cheek fat pad; combined with zygomaticus work; intraoral palpation by trained therapists; finish with lateral cheek drainage strokes toward lymph nodes',
+    tensionPatterns: 'Tightens with chronic jaw tension and clenching; often involved in clients who chew on one side (asymmetric buccinator tone)',
+    benefits: 'Relieves inner cheek tension; improves jaw symmetry; aids in lymphatic drainage of mid-face; relieves dental tension patterns',
+    clientIndicators: 'Client bites inner cheek; cheek tension with chewing; dental clenching patterns; facial puffiness',
+    contraindications: 'No direct intraoral work without proper training; avoid if mouth sores, dental infection, or recent oral surgery',
+    benefitTags: ['cheek tension', 'jaw symmetry', 'lymphatic drainage', 'dental tension']
+  },
+  {
+    id: 'orb-oris', name: 'Orbicularis Oris', latin: 'M. orbicularis oris', color: '#e11d48',
     function: 'Circular sphincter muscle surrounding the mouth. Closes and compresses lips, protrudes them, and shapes speech sounds.',
-    expressions: 'Kissing, whistling, pouting, every speech articulation' },
-  { id: 'risorius', name: 'Risorius', latin: 'M. risorius', color: '#0ea5e9',
+    expressions: 'Kissing, whistling, pouting, every speech articulation',
+    region: 'mouth', pressure: 'light',
+    palpation: 'Circular muscle encircling the mouth; palpate by gently pressing around the lip vermillion border; feel the muscular ring under the skin just outside the lip edge',
+    technique: 'Light circular effleurage around entire lip border; gentle pinch-and-roll of vermillion border; slow horizontal strokes across philtrum; combine with mentalis release for full perioral treatment; work in quadrants (upper left, upper right, lower left, lower right)',
+    tensionPatterns: 'Chronic pursing patterns (smokers, frequent kissers, wind instrument players); tension from habitual lip compression under stress; often linked to speech patterns',
+    benefits: 'Softens perioral lines (lip lines); reduces lip compression tension; improves lip mobility for speech therapy clients; eases perioral tension patterns',
+    clientIndicators: 'Vertical lip lines; habitual lip pursing or compressing; restricted lip mobility; speech articulation concerns; jaw/lip tension',
+    contraindications: 'Avoid if active cold sore/herpes labialis; avoid very deep pressure over dental roots; work gently — highly innervated area',
+    benefitTags: ['perioral lines', 'lip tension', 'speech support', 'lip mobility']
+  },
+  {
+    id: 'risorius', name: 'Risorius', latin: 'M. risorius', color: '#0ea5e9',
     function: 'Thin, variable muscle. Retracts the angle of the mouth horizontally creating a grin. Responsible for dimples in many people.',
-    expressions: 'Grinning, smirking, strained smile, dimple formation' },
-  { id: 'dep-anguli', name: 'Depressor Anguli Oris', latin: 'M. depressor anguli oris', color: '#94a3b8',
+    expressions: 'Grinning, smirking, strained smile, dimple formation',
+    region: 'cheek', pressure: 'light',
+    palpation: 'Thin, variable muscle from parotid fascia to mouth corner; variable in presence/size between individuals; palpate just anterior to masseter along the line to mouth corner',
+    technique: 'Gentle horizontal effleurage from ear toward mouth corner; light compression strokes; often treated as part of broader cheek massage rather than isolation',
+    tensionPatterns: 'Can hold tension from forced grinning; involved in asymmetric smile patterns; varies considerably between individuals',
+    benefits: 'Eases cheek-to-mouth tension; can improve smile symmetry; supports general cheek relaxation',
+    clientIndicators: 'Asymmetric grin; tension from lateral cheek toward mouth; visible pulling at mouth corner',
+    contraindications: 'Avoid deep pressure near parotid gland; light work only — muscle is thin and superficial',
+    benefitTags: ['cheek tension', 'smile symmetry', 'facial relaxation']
+  },
+  {
+    id: 'dep-anguli', name: 'Depressor Anguli Oris', latin: 'M. depressor anguli oris', color: '#94a3b8',
     function: 'Pulls the corner of the mouth downward and laterally. The primary muscle of frowning and expressing sadness.',
-    expressions: 'Frowning, sadness, displeasure, tragedy expression' },
-  { id: 'dep-labii', name: 'Depressor Labii Inferioris', latin: 'M. depressor labii inferioris', color: '#64748b',
+    expressions: 'Frowning, sadness, displeasure, tragedy expression',
+    region: 'mouth', pressure: 'light',
+    palpation: 'At the corner of the mouth, slightly inferior; palpate by asking client to frown — feel the cordlike structure pulling the corner downward; trace from chin area to mouth corner',
+    technique: 'Upward lifting effleurage strokes from chin to mouth corner; gentle cross-fiber friction at muscle origin; combine with zygomaticus work to address antagonist pair; slow upward petrissage to counteract chronic downward pull',
+    tensionPatterns: 'Chronically shortened in clients with habitual downward expression (chronic stress, grief, depression); contributes to marionette lines and "sad" resting face',
+    benefits: 'Lifts mouth corners; softens marionette lines; improves emotional expression range; useful in facial symmetry protocols; can visibly brighten resting expression',
+    clientIndicators: 'Downturned mouth corners at rest; marionette lines; client describes appearing sad/tired even when not; chronic frowning habit',
+    contraindications: 'Gentle work only — near mental nerve exit point at chin; avoid deep inferior chin pressure',
+    benefitTags: ['marionette lines', 'mouth corners', 'facial lifting', 'facial symmetry']
+  },
+  {
+    id: 'dep-labii', name: 'Depressor Labii Inferioris', latin: 'M. depressor labii inferioris', color: '#64748b',
     function: 'Depresses the lower lip and moves it laterally, exposing the lower teeth. Important in speech articulation.',
-    expressions: 'Doubt, disgust, "meh" face, lower lip pout, speech' },
-  { id: 'mentalis', name: 'Mentalis', latin: 'M. mentalis', color: '#a3e635',
+    expressions: 'Doubt, disgust, "meh" face, lower lip pout, speech',
+    region: 'mouth', pressure: 'light',
+    palpation: 'Inferior to lower lip, medial to depressor anguli oris; palpate between chin and lower lip, feel for movement when client pulls lower lip downward',
+    technique: 'Very light upward effleurage on lower lip area; gentle compression strokes; typically treated as part of full perioral routine rather than in isolation',
+    tensionPatterns: 'Involved in habitual lip-pulling expressions (doubt, contempt); can contribute to lower lip thinning appearance from chronic contraction',
+    benefits: 'Eases lower lip tension; supports full perioral release; contributes to lower lip mobility',
+    clientIndicators: 'Lower lip tension; restricted lower lip mobility; speech articulation issues; chronic doubt/contempt expression',
+    contraindications: 'Avoid deep pressure on chin near mental foramen; very superficial work only',
+    benefitTags: ['lower lip tension', 'perioral release', 'lip mobility']
+  },
+  {
+    id: 'mentalis', name: 'Mentalis', latin: 'M. mentalis', color: '#a3e635',
     function: 'Paired muscles on the chin tip. Raises and wrinkles the skin of the chin, protrudes and evertes the lower lip.',
-    expressions: 'Pouting, doubt, thoughtfulness, chin dimpling, lower lip push' },
-  { id: 'platysma', name: 'Platysma', latin: 'M. platysma', color: '#fbbf24',
+    expressions: 'Pouting, doubt, thoughtfulness, chin dimpling, lower lip push',
+    region: 'jaw', pressure: 'light',
+    palpation: 'Paired muscles on the chin tip; feel the fleshy pad of the chin — these muscles underlie it; palpate by pressing into the central chin pad and asking client to pout',
+    technique: 'Gentle circular compression on chin pad; upward effleurage from chin toward lower lip; pinch-and-roll technique on chin fat pad; slow inferior traction to release upward pull pattern',
+    tensionPatterns: 'Often chronically elevated in habitual pout or doubt expression; creates chin dimpling and mentolabial crease deepening; frequently tight in clients with dental occlusion issues',
+    benefits: 'Softens chin dimpling and mental crease; improves lower face definition; eases chin tension related to dental/bite issues; overall lower face relaxation',
+    clientIndicators: 'Chin dimpling at rest; deepening mentolabial crease; dental bite issues; habitual chin tension or pouting',
+    contraindications: 'Avoid deep inferior chin pressure near mental foramen (mental nerve exits here); gentle only',
+    benefitTags: ['chin tension', 'chin dimpling', 'lower face', 'dental tension']
+  },
+  {
+    id: 'platysma', name: 'Platysma', latin: 'M. platysma', color: '#fbbf24',
     function: 'Broad, flat muscle of the neck. Depresses mandible and lower lip, draws corners of mouth down, tenses neck skin.',
-    expressions: 'Extreme effort, horror, grimacing, neck tension, aging vertical bands' },
-  { id: 'auricularis', name: 'Auricularis', latin: 'Mm. auriculares', color: '#34d399',
+    expressions: 'Extreme effort, horror, grimacing, neck tension, aging vertical bands',
+    region: 'neck', pressure: 'light',
+    palpation: 'Broad, flat muscle covering front and sides of neck; palpate by asking client to grimace (neck bands appear); feel the sheet of muscle from below jawline down to upper chest',
+    technique: 'Long effleurage strokes from jawline inferiorly toward clavicles; gentle superficial petrissage on neck bands; light stretch by extending neck slightly; always work inferiorly (never superiorly against lymphatic flow); include decolletage',
+    tensionPatterns: 'Develops vertical bands with age and stress; contracts powerfully with extreme tension or effort; linked to overall neck and jaw tension complex; contributes to marionette line formation',
+    benefits: 'Reduces visible neck bands; improves neck skin tone; eases jaw-neck tension connection; supports lymphatic drainage of entire face; essential in anti-aging facial protocols',
+    clientIndicators: 'Visible neck bands/cords; neck tension connecting to jaw; pulling sensation from neck to lower face; overall facial puffiness',
+    contraindications: 'Avoid pressure over carotid artery (lateral neck); never work superiorly against lymphatic flow on neck; avoid if recent neck surgery, thyroid issues (check with GP), or cervical spine instability',
+    benefitTags: ['neck tension', 'neck bands', 'lymphatic drainage', 'jawline definition', 'anti-aging']
+  },
+  {
+    id: 'auricularis', name: 'Auricularis', latin: 'Mm. auriculares', color: '#34d399',
     function: 'Three small muscles surrounding the ear (anterior, superior, posterior). Move the ear in most people vestigially.',
-    expressions: 'Ear wiggling (rare), scalp tension, emotional alerting response' },
+    expressions: 'Ear wiggling (rare), scalp tension, emotional alerting response',
+    region: 'ear', pressure: 'light',
+    palpation: 'Three small muscles around the ear: anterior (in front), superior (above), posterior (behind); palpate the soft tissue immediately surrounding the ear cartilage',
+    technique: 'Gentle circular massage of the scalp tissue surrounding the ear; include ear massage (lobe pull, helix fold); circular compression at ear attachment points; work into the mastoid process area posteriorly',
+    tensionPatterns: 'Area around ears accumulates tension from jaw clenching (TMJ referred tension), headphone use, and scalp tension; posterior auricular area connects to occipital tension',
+    benefits: 'Eases ear-area tension; supports TMJ treatment (auricular-masseter tension connection); promotes scalp circulation; deeply relaxing due to auricular-vagal nerve connections',
+    clientIndicators: 'Ear pressure or fullness; temple/ear tension; tight scalp; headphone-related discomfort; as part of comprehensive TMJ protocol',
+    contraindications: 'Avoid if active ear infection (otitis); gentle only over mastoid — large lymph nodes present; do not press on ear canal',
+    benefitTags: ['ear tension', 'TMJ relief', 'scalp tension', 'deep relaxation']
+  },
 ];
 
 // ── Sketchfab Setup ──────────────────────────────────────────────────────────
-// Human Face Anatomy model by InventionMED — full skull, muscles, nerves, veins
 const MODEL_UID = 'c19e033758f24fef87aa29eeff3191a0';
 
 let api = null;
@@ -505,7 +943,6 @@ client.init(MODEL_UID, {
 });
 
 // ── Layer Control ────────────────────────────────────────────────────────────
-// Map layer names to keyword patterns in Sketchfab node names
 const LAYER_KEYWORDS = {
   skin:    ['skin', 'dermis', 'epidermis', 'surface'],
   muscles: ['muscle', 'musculus', 'masseter', 'temporalis', 'frontalis', 'zygomaticus', 'buccinator', 'orbicularis', 'platysma', 'mentalis', 'risorius', 'corrugator', 'procerus', 'nasalis'],
@@ -518,7 +955,6 @@ const LAYER_KEYWORDS = {
 function toggleLayer(layerName, visible) {
   if (!api) return;
   layerState[layerName] = visible;
-
   const keywords = LAYER_KEYWORDS[layerName] || [];
   Object.values(nodeMap).forEach(node => {
     const name = (node.name || '').toLowerCase();
@@ -536,14 +972,11 @@ function applyPreset(preset) {
     skull:   { skin: false, muscles: true, fat: false, nerves: false, veins: false, skull: true },
     all:     { skin: true,  muscles: true, fat: true,  nerves: true,  veins: true,  skull: true },
   };
-
   const config = presets[preset];
   Object.entries(config).forEach(([layer, visible]) => {
     layerState[layer] = visible;
     toggleLayer(layer, visible);
   });
-
-  // Sync button states
   document.querySelectorAll('.layer-btn[data-layer]').forEach(btn => {
     const layer = btn.dataset.layer;
     btn.classList.toggle('active', layerState[layer]);
@@ -569,6 +1002,7 @@ MUSCLES.forEach(m => {
   item.innerHTML = `
     <span class="muscle-dot" style="background:${m.color}"></span>
     <span class="muscle-item-name">${m.name}</span>
+    <span class="pressure-badge pressure-${m.pressure}">${m.pressure[0].toUpperCase()}</span>
     <span class="muscle-item-arrow">›</span>
   `;
   item.addEventListener('click', () => selectMuscle(m));
@@ -577,7 +1011,6 @@ MUSCLES.forEach(m => {
 
 // ── Muscle Selection ──────────────────────────────────────────────────────────
 function selectMuscle(muscle) {
-  // Deselect previous
   document.querySelectorAll('.muscle-item').forEach(el => el.classList.remove('selected'));
   document.getElementById('muscle-card')?.classList.remove('highlighted');
 
@@ -589,17 +1022,12 @@ function selectMuscle(muscle) {
 
   selectedMuscleId = muscle.id;
 
-  // Highlight in list
   const item = document.getElementById(`muscle-item-${muscle.id}`);
   if (item) item.classList.add('selected');
 
-  // Update info panel
   updateInfoPanel(muscle);
-
-  // Switch to info tab
   switchTab('info');
 
-  // Try to highlight in 3D model via camera focus on annotation or node search
   if (api) {
     const keywords = muscle.id.split('-').concat(muscle.name.toLowerCase().split(' '));
     Object.values(nodeMap).forEach(node => {
@@ -612,26 +1040,47 @@ function selectMuscle(muscle) {
   }
 }
 
+// ── Info Panel ────────────────────────────────────────────────────────────────
 function updateInfoPanel(muscle) {
   const card = document.getElementById('muscle-card');
+  const btn = document.getElementById('add-session-btn');
+
   if (!muscle) {
     document.getElementById('muscle-title').textContent = 'Select a muscle';
     document.getElementById('muscle-title').style.color = '#475569';
     document.getElementById('muscle-latin').textContent = '';
-    document.getElementById('muscle-function').textContent = 'Click any muscle in the list or on the 3D model to see detailed anatomical information.';
-    document.getElementById('muscle-expressions').textContent = '—';
-    document.getElementById('muscle-expressions').style.color = '#475569';
+    document.getElementById('muscle-pressure-display').innerHTML = '';
+    ['palpation','technique','tension','benefits','indicators','contra','function','expressions']
+      .forEach(id => {
+        const el = document.getElementById(`muscle-${id}`);
+        if (el) el.textContent = '—';
+      });
     card?.classList.remove('highlighted');
+    if (btn) btn.style.display = 'none';
     return;
   }
 
   document.getElementById('muscle-title').textContent = muscle.name;
   document.getElementById('muscle-title').style.color = muscle.color;
   document.getElementById('muscle-latin').textContent = muscle.latin;
-  document.getElementById('muscle-function').textContent = muscle.function;
-  document.getElementById('muscle-expressions').textContent = muscle.expressions;
-  document.getElementById('muscle-expressions').style.color = '#a78bfa';
+  document.getElementById('muscle-pressure-display').innerHTML =
+    `<span class="pressure-badge pressure-${muscle.pressure}" style="margin-top:8px;display:inline-block">
+      ${muscle.pressure.charAt(0).toUpperCase() + muscle.pressure.slice(1)} Pressure
+    </span>`;
+  document.getElementById('muscle-palpation').textContent = muscle.palpation || '—';
+  document.getElementById('muscle-technique').textContent = muscle.technique || '—';
+  document.getElementById('muscle-tension').textContent = muscle.tensionPatterns || '—';
+  document.getElementById('muscle-benefits').textContent = muscle.benefits || '—';
+  document.getElementById('muscle-indicators').textContent = muscle.clientIndicators || '—';
+  document.getElementById('muscle-contra').textContent = muscle.contraindications || 'None noted';
+  document.getElementById('muscle-function').textContent = muscle.function || '—';
+  document.getElementById('muscle-expressions').textContent = muscle.expressions || '—';
+
   card?.classList.add('highlighted');
+  if (btn) {
+    btn.style.display = 'block';
+    updateSessionBtn(muscle.id);
+  }
 }
 
 // ── Tab Switching ─────────────────────────────────────────────────────────────
@@ -647,6 +1096,128 @@ function switchTab(name) {
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
+
+// ── Session Builder ───────────────────────────────────────────────────────────
+let sessionMuscles = JSON.parse(localStorage.getItem('facial_session_v1') || '[]');
+
+function saveSession() {
+  localStorage.setItem('facial_session_v1', JSON.stringify(sessionMuscles));
+}
+
+function toggleMuscleInSession() {
+  if (!selectedMuscleId) return;
+  const idx = sessionMuscles.indexOf(selectedMuscleId);
+  if (idx === -1) {
+    sessionMuscles.push(selectedMuscleId);
+  } else {
+    sessionMuscles.splice(idx, 1);
+  }
+  saveSession();
+  renderSession();
+  updateSessionBtn(selectedMuscleId);
+}
+
+function updateSessionBtn(muscleId) {
+  const btn = document.getElementById('add-session-btn');
+  if (!btn) return;
+  const inSession = sessionMuscles.includes(muscleId);
+  btn.textContent = inSession ? '✓ In Session (Remove)' : '+ Add to Session';
+  btn.className = inSession ? 'in-session' : '';
+  btn.id = 'add-session-btn';
+}
+
+function renderSession() {
+  const panel = document.getElementById('session-panel');
+  const empty = document.getElementById('session-empty');
+  panel.querySelectorAll('.session-muscle').forEach(el => el.remove());
+
+  if (sessionMuscles.length === 0) {
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  sessionMuscles.forEach(id => {
+    const m = MUSCLES.find(x => x.id === id);
+    if (!m) return;
+    const div = document.createElement('div');
+    div.className = 'session-muscle';
+    div.innerHTML = `
+      <div class="session-muscle-info">
+        <div class="session-muscle-name">
+          <span style="color:${m.color}">●</span> ${m.name}
+          <span class="pressure-badge pressure-${m.pressure}" style="margin-left:4px">${m.pressure[0].toUpperCase()}</span>
+        </div>
+        <div class="session-muscle-technique">${m.technique ? m.technique.substring(0,120) + '…' : ''}</div>
+      </div>
+      <button onclick="removeFromSession('${m.id}')" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:16px;padding:4px;flex-shrink:0" title="Remove">×</button>
+    `;
+    panel.appendChild(div);
+  });
+}
+
+function removeFromSession(id) {
+  sessionMuscles = sessionMuscles.filter(x => x !== id);
+  saveSession();
+  renderSession();
+  if (selectedMuscleId) updateSessionBtn(selectedMuscleId);
+}
+
+function clearSession() {
+  if (sessionMuscles.length > 0 && confirm('Clear all muscles from session?')) {
+    sessionMuscles = [];
+    saveSession();
+    renderSession();
+    if (selectedMuscleId) updateSessionBtn(selectedMuscleId);
+  }
+}
+
+function printSession() {
+  if (sessionMuscles.length === 0) {
+    alert('Add muscles to your session before printing.');
+    return;
+  }
+  switchTab('session');
+  setTimeout(() => window.print(), 100);
+}
+
+// ── Search & Filter ───────────────────────────────────────────────────────────
+let activeRegion = 'all';
+
+function filterMuscles() {
+  const query = document.getElementById('muscle-search').value.toLowerCase();
+  document.querySelectorAll('.muscle-item').forEach(item => {
+    const muscleId = item.id.replace('muscle-item-', '');
+    const m = MUSCLES.find(x => x.id === muscleId);
+    if (!m) return;
+    const matchesRegion = activeRegion === 'all' || m.region === activeRegion;
+    const matchesSearch = !query ||
+      m.name.toLowerCase().includes(query) ||
+      (m.benefitTags || []).some(t => t.toLowerCase().includes(query)) ||
+      (m.benefits || '').toLowerCase().includes(query) ||
+      (m.tensionPatterns || '').toLowerCase().includes(query);
+    item.style.display = (matchesRegion && matchesSearch) ? '' : 'none';
+  });
+}
+
+function setRegionFilter(btn, region) {
+  activeRegion = region;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  filterMuscles();
+}
+
+// ── Massage Points Overlay ────────────────────────────────────────────────────
+function toggleMassagePoints() {
+  const overlay = document.getElementById('massage-overlay');
+  const btn = document.getElementById('massage-toggle');
+  overlay.classList.toggle('active');
+  btn.classList.toggle('active');
+  btn.textContent = overlay.classList.contains('active') ? '✕ Hide Points' : '⊕ Massage Points';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderSession();
 </script>
 </body>
 </html>
