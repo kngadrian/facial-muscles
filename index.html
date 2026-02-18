@@ -1,1309 +1,652 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Human Facial Musculature — Interactive 3D</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facial Muscles — 3D Anatomy</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    :root {
-      --bg: #0a0a0f;
-      --panel-bg: rgba(15, 15, 25, 0.95);
-      --accent: #5e9bff;
-      --text: #e0e6ff;
-      --text-dim: #8090b0;
-      --border: rgba(94, 155, 255, 0.25);
-      --highlight: #ffe066;
-    }
+  :root {
+    --bg: #060a14;
+    --surface: rgba(10, 16, 32, 0.92);
+    --border: rgba(99, 165, 255, 0.15);
+    --accent: #3b82f6;
+    --accent2: #8b5cf6;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --radius: 14px;
+  }
 
-    html, body {
-      width: 100%; height: 100%;
-      overflow: hidden;
-      background: var(--bg);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      color: var(--text);
-    }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+  }
 
-    /* ── Loading Overlay ── */
-    #loading {
-      position: fixed; inset: 0;
-      background: var(--bg);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      z-index: 1000;
-      transition: opacity 0.6s ease;
-    }
-    #loading.fade-out { opacity: 0; pointer-events: none; }
+  /* ── Viewer ── */
+  #viewer-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
 
-    .spinner {
-      width: 56px; height: 56px;
-      border: 3px solid rgba(94,155,255,0.2);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+  #api-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
 
-    #loading p {
-      font-size: 14px; color: var(--text-dim);
-      letter-spacing: 0.1em; text-transform: uppercase;
-    }
+  #loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    z-index: 10;
+    transition: opacity 0.8s ease;
+  }
 
-    /* ── Canvas ── */
-    #canvas {
-      position: fixed; inset: 0;
-      width: 100% !important; height: 100% !important;
-      display: block;
-    }
+  #loading-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
 
-    /* ── Title Bar ── */
-    #title-bar {
-      position: fixed; top: 0; left: 0; right: 0;
-      padding: 14px 24px 10px;
-      background: linear-gradient(180deg, rgba(10,10,20,0.97) 60%, transparent);
-      z-index: 10;
-      pointer-events: none;
-    }
-    #title-bar h1 {
-      font-size: 20px; font-weight: 700;
-      letter-spacing: 0.06em;
-      color: #fff;
-      text-shadow: 0 0 20px rgba(94,155,255,0.6);
-    }
-    #title-bar p {
-      font-size: 12px; color: var(--text-dim);
-      letter-spacing: 0.12em; text-transform: uppercase;
-      margin-top: 2px;
-    }
+  .loader-ring {
+    width: 52px; height: 52px;
+    border: 3px solid rgba(59,130,246,0.15);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
 
-    /* ── Info Panel ── */
-    #info-panel {
-      position: fixed; bottom: 24px; right: 24px;
-      width: 320px;
-      background: var(--panel-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 0;
-      z-index: 20;
-      overflow: hidden;
-      transform: translateX(360px);
-      opacity: 0;
-      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
-    }
-    #info-panel.visible {
-      transform: translateX(0);
-      opacity: 1;
-    }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-    #info-panel-header {
-      padding: 14px 16px 12px;
-      display: flex; align-items: center; gap: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-    #muscle-color-swatch {
-      width: 14px; height: 14px; border-radius: 50%;
-      flex-shrink: 0; box-shadow: 0 0 8px currentColor;
-    }
-    #muscle-name {
-      font-size: 16px; font-weight: 700;
-      color: #fff; line-height: 1.2;
-    }
+  .loader-text { color: var(--muted); font-size: 13px; letter-spacing: 1px; }
 
-    #info-panel-body {
-      padding: 14px 16px 16px;
-      display: flex; flex-direction: column; gap: 10px;
-    }
+  /* ── Sidebar ── */
+  #sidebar {
+    width: 320px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(20px);
+    overflow: hidden;
+  }
 
-    .info-row { display: flex; flex-direction: column; gap: 3px; }
-    .info-label {
-      font-size: 10px; font-weight: 700;
-      letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--accent); opacity: 0.8;
-    }
-    .info-value {
-      font-size: 13px; color: var(--text);
-      line-height: 1.5;
-    }
-    .info-value.expressions {
-      font-style: italic; color: var(--highlight); opacity: 0.9;
-    }
+  #sidebar-header {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
 
-    /* ── Legend ── */
-    #legend {
-      position: fixed; top: 80px; left: 20px;
-      background: var(--panel-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 14px;
-      z-index: 10;
-      min-width: 180px;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    }
-    #legend h3 {
-      font-size: 10px; font-weight: 700;
-      letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--text-dim); margin-bottom: 10px;
-    }
-    .legend-item {
-      display: flex; align-items: center; gap: 8px;
-      padding: 3px 0; cursor: pointer;
-      transition: opacity 0.2s;
-    }
-    .legend-item:hover { opacity: 0.75; }
-    .legend-swatch {
-      width: 10px; height: 10px; border-radius: 3px;
-      flex-shrink: 0;
-    }
-    .legend-text {
-      font-size: 11px; color: var(--text-dim);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      max-width: 140px;
-    }
-    .legend-separator {
-      height: 1px; background: var(--border);
-      margin: 6px 0;
-    }
-    .legend-category {
-      font-size: 9px; font-weight: 700;
-      letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--accent); opacity: 0.6;
-      margin: 4px 0 2px;
-    }
+  #sidebar-header h1 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 3px;
+  }
 
-    /* ── Hint ── */
-    #hint {
-      position: fixed; bottom: 24px; left: 50%;
-      transform: translateX(-50%);
-      background: rgba(10,10,20,0.8);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 8px 18px;
-      font-size: 12px; color: var(--text-dim);
-      letter-spacing: 0.06em;
-      z-index: 10;
-      pointer-events: none;
-      transition: opacity 0.5s;
-      backdrop-filter: blur(6px);
-    }
-    #hint.hidden { opacity: 0; }
+  #sidebar-header p {
+    font-size: 12px;
+    color: var(--muted);
+  }
 
-    /* ── Controls hint ── */
-    #controls-hint {
-      position: fixed; bottom: 62px; left: 50%;
-      transform: translateX(-50%);
-      display: flex; gap: 16px;
-      font-size: 11px; color: var(--text-dim);
-      opacity: 0.6;
-      z-index: 10;
-      pointer-events: none;
-    }
-    .ctrl { display: flex; align-items: center; gap: 5px; }
-    .ctrl kbd {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 4px;
-      padding: 1px 6px; font-size: 10px;
-    }
+  /* ── Tabs ── */
+  #tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
 
-    /* ── Close button ── */
-    #info-close {
-      position: absolute; top: 10px; right: 12px;
-      background: none; border: none;
-      color: var(--text-dim); cursor: pointer;
-      font-size: 18px; line-height: 1;
-      padding: 2px 6px; border-radius: 4px;
-      transition: color 0.2s, background 0.2s;
-    }
-    #info-close:hover { color: #fff; background: rgba(255,255,255,0.1); }
-  </style>
+  .tab-btn {
+    flex: 1;
+    padding: 11px 8px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+  }
+
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+  /* ── Layer Controls ── */
+  #layers-panel {
+    padding: 16px;
+    overflow-y: auto;
+  }
+
+  .layer-section { margin-bottom: 20px; }
+  .section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .layer-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 6px;
+  }
+
+  .layer-btn:hover { background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.3); }
+  .layer-btn.active { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.4); color: #fff; }
+  .layer-btn.active .layer-dot { box-shadow: 0 0 8px currentColor; }
+
+  .layer-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .toggle-icon { margin-left: auto; font-size: 14px; transition: transform 0.2s; }
+  .layer-btn.active .toggle-icon { transform: rotate(45deg); }
+
+  /* ── Muscle Info Panel ── */
+  #info-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  #muscle-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 12px;
+  }
+
+  #muscle-card.highlighted {
+    border-color: var(--accent);
+    background: rgba(59,130,246,0.06);
+  }
+
+  #muscle-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  #muscle-latin {
+    font-size: 12px;
+    color: var(--accent2);
+    font-style: italic;
+    margin-bottom: 14px;
+  }
+
+  .info-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 5px;
+    margin-top: 12px;
+  }
+
+  #muscle-function {
+    font-size: 13px;
+    line-height: 1.65;
+    color: #94a3b8;
+  }
+
+  #muscle-expressions {
+    font-size: 13px;
+    color: #a78bfa;
+    line-height: 1.55;
+  }
+
+  /* ── Muscle List ── */
+  #muscle-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+  }
+
+  .muscle-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 3px;
+    border: 1px solid transparent;
+  }
+
+  .muscle-item:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--border);
+  }
+
+  .muscle-item.selected {
+    background: rgba(59,130,246,0.1);
+    border-color: rgba(59,130,246,0.35);
+  }
+
+  .muscle-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .muscle-item-name { font-size: 13px; color: var(--text); }
+  .muscle-item.selected .muscle-item-name { color: #fff; font-weight: 600; }
+  .muscle-item-arrow { margin-left: auto; color: var(--muted); font-size: 12px; }
+
+  /* ── Bottom tip ── */
+  #controls-tip {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    flex-shrink: 0;
+    line-height: 1.8;
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(99,165,255,0.25); border-radius: 4px; }
+
+  #empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.8;
+  }
+
+  #empty-state .icon { font-size: 32px; margin-bottom: 12px; }
+</style>
 </head>
 <body>
 
-<!-- Loading Overlay -->
-<div id="loading">
-  <div class="spinner"></div>
-  <p>Loading 3D model&hellip;</p>
-</div>
-
-<!-- Title -->
-<div id="title-bar">
-  <h1>Human Facial Musculature</h1>
-  <p>Interactive 3D Anatomy — Click any muscle to explore</p>
-</div>
-
-<!-- Canvas (Three.js target) -->
-<canvas id="canvas"></canvas>
-
-<!-- Info Panel -->
-<div id="info-panel">
-  <button id="info-close" title="Close">&times;</button>
-  <div id="info-panel-header">
-    <span id="muscle-color-swatch"></span>
-    <span id="muscle-name">—</span>
+<!-- 3D Viewer -->
+<div id="viewer-wrap">
+  <div id="loading-overlay">
+    <div class="loader-ring"></div>
+    <div class="loader-text">Loading anatomical model…</div>
   </div>
-  <div id="info-panel-body">
-    <div class="info-row">
-      <span class="info-label">Origin</span>
-      <span class="info-value" id="info-origin">—</span>
+  <iframe
+    id="api-frame"
+    allow="autoplay; fullscreen; xr-spatial-tracking"
+    allowfullscreen
+    mozallowfullscreen="true"
+    webkitallowfullscreen="true"
+    execution-while-out-of-viewport
+    execution-while-not-rendered
+    web-share
+  ></iframe>
+</div>
+
+<!-- Sidebar -->
+<div id="sidebar">
+  <div id="sidebar-header">
+    <h1>🧠 Facial Anatomy</h1>
+    <p>Interactive 3D Muscle Reference</p>
+  </div>
+
+  <div id="tabs">
+    <button class="tab-btn active" data-tab="muscles">Muscles</button>
+    <button class="tab-btn" data-tab="layers">Layers</button>
+    <button class="tab-btn" data-tab="info">Info</button>
+  </div>
+
+  <!-- Muscles Tab -->
+  <div class="tab-panel active" id="tab-muscles" style="overflow:hidden; display:flex; flex-direction:column;">
+    <div id="muscle-list"></div>
+  </div>
+
+  <!-- Layers Tab -->
+  <div class="tab-panel" id="tab-layers">
+    <div id="layers-panel">
+      <div class="layer-section">
+        <div class="section-label">Visibility Layers</div>
+        <button class="layer-btn active" data-layer="skin">
+          <span class="layer-dot" style="background:#d4a574"></span>
+          Skin / Dermis
+          <span class="toggle-icon">×</span>
+        </button>
+        <button class="layer-btn active" data-layer="muscles">
+          <span class="layer-dot" style="background:#ef4444"></span>
+          Facial Muscles
+          <span class="toggle-icon">×</span>
+        </button>
+        <button class="layer-btn active" data-layer="fat">
+          <span class="layer-dot" style="background:#fbbf24"></span>
+          Fat / Fascia
+          <span class="toggle-icon">×</span>
+        </button>
+        <button class="layer-btn active" data-layer="nerves">
+          <span class="layer-dot" style="background:#60a5fa"></span>
+          Nerves
+          <span class="toggle-icon">×</span>
+        </button>
+        <button class="layer-btn active" data-layer="veins">
+          <span class="layer-dot" style="background:#8b5cf6"></span>
+          Veins / Arteries
+          <span class="toggle-icon">×</span>
+        </button>
+        <button class="layer-btn active" data-layer="skull">
+          <span class="layer-dot" style="background:#e2e8f0"></span>
+          Skull / Bone
+          <span class="toggle-icon">×</span>
+        </button>
+      </div>
+
+      <div class="layer-section">
+        <div class="section-label">Quick Presets</div>
+        <button class="layer-btn" id="preset-muscles" onclick="applyPreset('muscles')">
+          <span class="layer-dot" style="background:#ef4444"></span>
+          Muscles only
+        </button>
+        <button class="layer-btn" id="preset-skull" onclick="applyPreset('skull')">
+          <span class="layer-dot" style="background:#e2e8f0"></span>
+          Skull + Muscles
+        </button>
+        <button class="layer-btn" id="preset-all" onclick="applyPreset('all')">
+          <span class="layer-dot" style="background:#3b82f6"></span>
+          Show all layers
+        </button>
+      </div>
     </div>
-    <div class="info-row">
-      <span class="info-label">Insertion</span>
-      <span class="info-value" id="info-insertion">—</span>
+  </div>
+
+  <!-- Info Tab -->
+  <div class="tab-panel" id="tab-info">
+    <div id="info-panel">
+      <div id="muscle-card">
+        <div id="muscle-title" style="color:#475569">Select a muscle</div>
+        <div id="muscle-latin"></div>
+        <div class="info-label">Function</div>
+        <div id="muscle-function">Click any muscle in the list or on the 3D model to see detailed anatomical information.</div>
+        <div class="info-label">Controls Expressions</div>
+        <div id="muscle-expressions" style="color:#475569">—</div>
+      </div>
     </div>
-    <div class="info-row">
-      <span class="info-label">Function</span>
-      <span class="info-value" id="info-function">—</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">Expressions</span>
-      <span class="info-value expressions" id="info-expressions">—</span>
-    </div>
+  </div>
+
+  <div id="controls-tip">
+    🖱 Drag — Rotate &nbsp;|&nbsp; Scroll — Zoom<br>
+    Right-click drag — Pan &nbsp;|&nbsp; Double-click — Focus
   </div>
 </div>
 
-<!-- Legend -->
-<div id="legend">
-  <h3>Muscle Groups</h3>
-  <div id="legend-items"></div>
-</div>
-
-<!-- Hint -->
-<div id="hint">Click a muscle to learn more</div>
-
-<!-- Controls hint -->
-<div id="controls-hint">
-  <div class="ctrl"><kbd>Drag</kbd> Rotate</div>
-  <div class="ctrl"><kbd>Scroll</kbd> Zoom</div>
-  <div class="ctrl"><kbd>Right-drag</kbd> Pan</div>
-</div>
-
-<!-- Three.js r128 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<!-- OrbitControls for r128 -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-
+<script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js"></script>
 <script>
-'use strict';
+// ── Muscle Data ──────────────────────────────────────────────────────────────
+const MUSCLES = [
+  { id: 'frontalis', name: 'Frontalis', latin: 'M. frontalis', color: '#f59e0b',
+    function: 'Elevates the eyebrows and wrinkles the forehead horizontally. The primary elevator of the upper eyelid and brow.',
+    expressions: 'Surprise, fear, worry, skepticism (raised brow), concentration' },
+  { id: 'temporalis', name: 'Temporalis', latin: 'M. temporalis', color: '#ef4444',
+    function: 'Fan-shaped muscle on the temple. Elevates the mandible (closes jaw) and retracts it. One of the four muscles of mastication.',
+    expressions: 'Chewing, biting, clenching, jaw retraction' },
+  { id: 'orb-oculi', name: 'Orbicularis Oculi', latin: 'M. orbicularis oculi', color: '#8b5cf6',
+    function: 'Sphincter muscle surrounding the eye. Orbital part closes eye forcefully; palpebral part blinks; lacrimal part assists tear drainage.',
+    expressions: 'Blinking, squinting, winking, forced closure (pain/sleep)' },
+  { id: 'corrugator', name: 'Corrugator Supercilii', latin: 'M. corrugator supercilii', color: '#06b6d4',
+    function: 'Small pyramid-shaped muscle at medial brow. Draws eyebrows downward and inward creating vertical glabellar frown lines.',
+    expressions: 'Frowning, concentration, anger, pain, bright light' },
+  { id: 'procerus', name: 'Procerus', latin: 'M. procerus', color: '#10b981',
+    function: 'Pulls the medial angle of the eyebrow downward, creating horizontal wrinkles across the nasal bridge.',
+    expressions: 'Disgust, concentration, "bunnying" the nose, squinting in sun' },
+  { id: 'nasalis', name: 'Nasalis', latin: 'M. nasalis', color: '#f97316',
+    function: 'Two parts: transverse (compresses nares) and alar (dilates nares). Controls nostril opening and closing.',
+    expressions: 'Flaring nostrils, sniffing, disgust, intense effort' },
+  { id: 'levator-labii', name: 'Levator Labii Superioris', latin: 'M. levator labii superioris', color: '#84cc16',
+    function: 'Elevates the upper lip and deepens the nasolabial fold. Also elevates the wing of the nose (alar part).',
+    expressions: 'Sneering, contempt, lip curl, disgust, crying' },
+  { id: 'zyg-major', name: 'Zygomaticus Major', latin: 'M. zygomaticus major', color: '#ec4899',
+    function: 'The primary smiling muscle. Extends from zygomatic bone to corner of mouth, pulling it superiorly and laterally.',
+    expressions: 'Smiling, laughing, happiness, joy — Duchenne smile (genuine)' },
+  { id: 'zyg-minor', name: 'Zygomaticus Minor', latin: 'M. zygomaticus minor', color: '#f472b6',
+    function: 'Elevates the upper lip and deepens the nasolabial fold. Assists zygomaticus major in smiling expressions.',
+    expressions: 'Smiling (subtle), sadness, grief' },
+  { id: 'masseter', name: 'Masseter', latin: 'M. masseter', color: '#dc2626',
+    function: 'The strongest chewing muscle. Superficial head closes jaw; deep head also retracts it. Easily palpable when clenching.',
+    expressions: 'Chewing, biting, jaw clenching (anger/stress), teeth grinding' },
+  { id: 'buccinator', name: 'Buccinator', latin: 'M. buccinator', color: '#7c3aed',
+    function: 'Horizontal muscle in the cheek wall. Keeps food between molars, compresses cheeks, and retracts mouth corners.',
+    expressions: 'Blowing, whistling, sucking, trumpet playing, feeding' },
+  { id: 'orb-oris', name: 'Orbicularis Oris', latin: 'M. orbicularis oris', color: '#e11d48',
+    function: 'Circular sphincter muscle surrounding the mouth. Closes and compresses lips, protrudes them, and shapes speech sounds.',
+    expressions: 'Kissing, whistling, pouting, every speech articulation' },
+  { id: 'risorius', name: 'Risorius', latin: 'M. risorius', color: '#0ea5e9',
+    function: 'Thin, variable muscle. Retracts the angle of the mouth horizontally creating a grin. Responsible for dimples in many people.',
+    expressions: 'Grinning, smirking, strained smile, dimple formation' },
+  { id: 'dep-anguli', name: 'Depressor Anguli Oris', latin: 'M. depressor anguli oris', color: '#94a3b8',
+    function: 'Pulls the corner of the mouth downward and laterally. The primary muscle of frowning and expressing sadness.',
+    expressions: 'Frowning, sadness, displeasure, tragedy expression' },
+  { id: 'dep-labii', name: 'Depressor Labii Inferioris', latin: 'M. depressor labii inferioris', color: '#64748b',
+    function: 'Depresses the lower lip and moves it laterally, exposing the lower teeth. Important in speech articulation.',
+    expressions: 'Doubt, disgust, "meh" face, lower lip pout, speech' },
+  { id: 'mentalis', name: 'Mentalis', latin: 'M. mentalis', color: '#a3e635',
+    function: 'Paired muscles on the chin tip. Raises and wrinkles the skin of the chin, protrudes and evertes the lower lip.',
+    expressions: 'Pouting, doubt, thoughtfulness, chin dimpling, lower lip push' },
+  { id: 'platysma', name: 'Platysma', latin: 'M. platysma', color: '#fbbf24',
+    function: 'Broad, flat muscle of the neck. Depresses mandible and lower lip, draws corners of mouth down, tenses neck skin.',
+    expressions: 'Extreme effort, horror, grimacing, neck tension, aging vertical bands' },
+  { id: 'auricularis', name: 'Auricularis', latin: 'Mm. auriculares', color: '#34d399',
+    function: 'Three small muscles surrounding the ear (anterior, superior, posterior). Move the ear in most people vestigially.',
+    expressions: 'Ear wiggling (rare), scalp tension, emotional alerting response' },
+];
 
-// ════════════════════════════════════════════════════
-//  MUSCLE DATA DICTIONARY
-// ════════════════════════════════════════════════════
-const MUSCLES = {
-  frontalis: {
-    name: "Frontalis",
-    origin: "Galea aponeurotica",
-    insertion: "Skin of eyebrows and forehead",
-    function: "Raises eyebrows, wrinkles forehead horizontally",
-    expressions: "Surprise, concern, attention, fear",
-    color: 0xe74c3c,
-    category: "Forehead"
-  },
-  corrugatorSupercilii_L: {
-    name: "Corrugator Supercilii (L)",
-    origin: "Medial superciliary arch of frontal bone",
-    insertion: "Skin above middle of superciliary arch",
-    function: "Draws eyebrows medially and downward",
-    expressions: "Frowning, concentration, anger, pain",
-    color: 0xc0392b,
-    category: "Forehead"
-  },
-  corrugatorSupercilii_R: {
-    name: "Corrugator Supercilii (R)",
-    origin: "Medial superciliary arch of frontal bone",
-    insertion: "Skin above middle of superciliary arch",
-    function: "Draws eyebrows medially and downward",
-    expressions: "Frowning, concentration, anger, pain",
-    color: 0xc0392b,
-    category: "Forehead"
-  },
-  orbicularisOculi_L: {
-    name: "Orbicularis Oculi (L)",
-    origin: "Medial orbital margin, medial palpebral ligament",
-    insertion: "Skin around orbit, lateral palpebral raphe",
-    function: "Closes eyelids, compresses lacrimal sac, wrinkles forehead",
-    expressions: "Blinking, squinting, winking, crying",
-    color: 0x3498db,
-    category: "Eye"
-  },
-  orbicularisOculi_R: {
-    name: "Orbicularis Oculi (R)",
-    origin: "Medial orbital margin, medial palpebral ligament",
-    insertion: "Skin around orbit, lateral palpebral raphe",
-    function: "Closes eyelids, compresses lacrimal sac, wrinkles forehead",
-    expressions: "Blinking, squinting, winking, crying",
-    color: 0x3498db,
-    category: "Eye"
-  },
-  nasalis_L: {
-    name: "Nasalis (L)",
-    origin: "Maxilla, above and lateral to incisive fossa",
-    insertion: "Cartilage of nose (alar part) / bridge",
-    function: "Flares and compresses nostrils",
-    expressions: "Disgust, anger, deep breathing, sniffing",
-    color: 0x9b59b6,
-    category: "Nose"
-  },
-  nasalis_R: {
-    name: "Nasalis (R)",
-    origin: "Maxilla, above and lateral to incisive fossa",
-    insertion: "Cartilage of nose (alar part) / bridge",
-    function: "Flares and compresses nostrils",
-    expressions: "Disgust, anger, deep breathing, sniffing",
-    color: 0x9b59b6,
-    category: "Nose"
-  },
-  temporalis_L: {
-    name: "Temporalis (L)",
-    origin: "Temporal fossa and temporal fascia",
-    insertion: "Coronoid process of mandible",
-    function: "Elevates (closes) mandible, retracts mandible",
-    expressions: "Chewing, clenching jaw, grinding teeth",
-    color: 0x27ae60,
-    category: "Jaw"
-  },
-  temporalis_R: {
-    name: "Temporalis (R)",
-    origin: "Temporal fossa and temporal fascia",
-    insertion: "Coronoid process of mandible",
-    function: "Elevates (closes) mandible, retracts mandible",
-    expressions: "Chewing, clenching jaw, grinding teeth",
-    color: 0x27ae60,
-    category: "Jaw"
-  },
-  masseter_L: {
-    name: "Masseter (L)",
-    origin: "Zygomatic arch and maxillary process of zygomatic bone",
-    insertion: "Lateral surface of ramus of mandible",
-    function: "Elevates mandible (closes jaw), assists protrusion",
-    expressions: "Chewing, clenching, grinding",
-    color: 0x2ecc71,
-    category: "Jaw"
-  },
-  masseter_R: {
-    name: "Masseter (R)",
-    origin: "Zygomatic arch and maxillary process of zygomatic bone",
-    insertion: "Lateral surface of ramus of mandible",
-    function: "Elevates mandible (closes jaw), assists protrusion",
-    expressions: "Chewing, clenching, grinding",
-    color: 0x2ecc71,
-    category: "Jaw"
-  },
-  zygomaticusMajor_L: {
-    name: "Zygomaticus Major (L)",
-    origin: "Zygomatic bone, lateral surface",
-    insertion: "Modiolus at corner of mouth",
-    function: "Draws corner of mouth upward and laterally",
-    expressions: "Smiling, laughing, happiness",
-    color: 0xf39c12,
-    category: "Cheek"
-  },
-  zygomaticusMajor_R: {
-    name: "Zygomaticus Major (R)",
-    origin: "Zygomatic bone, lateral surface",
-    insertion: "Modiolus at corner of mouth",
-    function: "Draws corner of mouth upward and laterally",
-    expressions: "Smiling, laughing, happiness",
-    color: 0xf39c12,
-    category: "Cheek"
-  },
-  zygomaticusMinor_L: {
-    name: "Zygomaticus Minor (L)",
-    origin: "Zygomatic bone, medial surface",
-    insertion: "Upper lip (orbicularis oris)",
-    function: "Raises upper lip, deepens nasolabial furrow",
-    expressions: "Sad smile, contempt, sneering",
-    color: 0xe67e22,
-    category: "Cheek"
-  },
-  zygomaticusMinor_R: {
-    name: "Zygomaticus Minor (R)",
-    origin: "Zygomatic bone, medial surface",
-    insertion: "Upper lip (orbicularis oris)",
-    function: "Raises upper lip, deepens nasolabial furrow",
-    expressions: "Sad smile, contempt, sneering",
-    color: 0xe67e22,
-    category: "Cheek"
-  },
-  buccinator_L: {
-    name: "Buccinator (L)",
-    origin: "Alveolar processes of maxilla and mandible, pterygomandibular raphe",
-    insertion: "Modiolus, blending with orbicularis oris",
-    function: "Compresses cheeks against teeth, aids chewing",
-    expressions: "Chewing, blowing, whistling, sucking",
-    color: 0x1abc9c,
-    category: "Cheek"
-  },
-  buccinator_R: {
-    name: "Buccinator (R)",
-    origin: "Alveolar processes of maxilla and mandible, pterygomandibular raphe",
-    insertion: "Modiolus, blending with orbicularis oris",
-    function: "Compresses cheeks against teeth, aids chewing",
-    expressions: "Chewing, blowing, whistling, sucking",
-    color: 0x1abc9c,
-    category: "Cheek"
-  },
-  risorius_L: {
-    name: "Risorius (L)",
-    origin: "Parotid fascia and platysma",
-    insertion: "Modiolus and skin at corner of mouth",
-    function: "Retracts corner of mouth laterally",
-    expressions: "Grinning, grimacing, forced smile",
-    color: 0x16a085,
-    category: "Cheek"
-  },
-  risorius_R: {
-    name: "Risorius (R)",
-    origin: "Parotid fascia and platysma",
-    insertion: "Modiolus and skin at corner of mouth",
-    function: "Retracts corner of mouth laterally",
-    expressions: "Grinning, grimacing, forced smile",
-    color: 0x16a085,
-    category: "Cheek"
-  },
-  levatorLabiiSuperioris_L: {
-    name: "Levator Labii Superioris (L)",
-    origin: "Infraorbital margin of maxilla",
-    insertion: "Skin of upper lip and alar cartilage of nose",
-    function: "Elevates upper lip, dilates nostril",
-    expressions: "Disgust, sadness, sneer, showing upper teeth",
-    color: 0xd35400,
-    category: "Lips"
-  },
-  levatorLabiiSuperioris_R: {
-    name: "Levator Labii Superioris (R)",
-    origin: "Infraorbital margin of maxilla",
-    insertion: "Skin of upper lip and alar cartilage of nose",
-    function: "Elevates upper lip, dilates nostril",
-    expressions: "Disgust, sadness, sneer, showing upper teeth",
-    color: 0xd35400,
-    category: "Lips"
-  },
-  orbicularisOris: {
-    name: "Orbicularis Oris",
-    origin: "Maxilla (incisive fossa), mandible, modiolus",
-    insertion: "Skin and mucous membrane of lips",
-    function: "Closes and protrudes lips, shapes for speech",
-    expressions: "Kissing, whistling, pouting, speech",
-    color: 0xe91e8c,
-    category: "Lips"
-  },
-  depressorLabiiInferioris_L: {
-    name: "Depressor Labii Inferioris (L)",
-    origin: "Anterolateral surface of mandible",
-    insertion: "Skin of lower lip and orbicularis oris",
-    function: "Depresses and everts lower lip",
-    expressions: "Sadness, doubt, irony, showing lower teeth",
-    color: 0x8e44ad,
-    category: "Lips"
-  },
-  depressorLabiiInferioris_R: {
-    name: "Depressor Labii Inferioris (R)",
-    origin: "Anterolateral surface of mandible",
-    insertion: "Skin of lower lip and orbicularis oris",
-    function: "Depresses and everts lower lip",
-    expressions: "Sadness, doubt, irony, showing lower teeth",
-    color: 0x8e44ad,
-    category: "Lips"
-  },
-  mentalis: {
-    name: "Mentalis",
-    origin: "Incisive fossa of mandible",
-    insertion: "Skin of chin",
-    function: "Elevates chin skin, protrudes lower lip",
-    expressions: "Pouting, doubt, determination, drinking",
-    color: 0x6c3483,
-    category: "Chin"
-  }
-};
+// ── Sketchfab Setup ──────────────────────────────────────────────────────────
+// Human Face Anatomy model by InventionMED — full skull, muscles, nerves, veins
+const MODEL_UID = 'c19e033758f24fef87aa29eeff3191a0';
 
-// ════════════════════════════════════════════════════
-//  LEGEND CATEGORIES & ORDER
-// ════════════════════════════════════════════════════
-const CATEGORIES = ["Forehead", "Eye", "Nose", "Jaw", "Cheek", "Lips", "Chin"];
-const CATEGORY_COLORS = {
-  "Forehead": "#e74c3c", "Eye": "#3498db", "Nose": "#9b59b6",
-  "Jaw": "#27ae60", "Cheek": "#f39c12", "Lips": "#e91e8c", "Chin": "#6c3483"
-};
+let api = null;
+let nodeMap = {};
+let selectedMuscleId = null;
+let layerState = { skin: true, muscles: true, fat: true, nerves: true, veins: true, skull: true };
 
-// ════════════════════════════════════════════════════
-//  BUILD LEGEND
-// ════════════════════════════════════════════════════
-(function buildLegend() {
-  const container = document.getElementById('legend-items');
-  CATEGORIES.forEach(cat => {
-    const catDiv = document.createElement('div');
-    catDiv.className = 'legend-category';
-    catDiv.textContent = cat;
-    container.appendChild(catDiv);
+const iframe = document.getElementById('api-frame');
+const client = new Sketchfab(iframe);
 
-    Object.entries(MUSCLES).forEach(([key, m]) => {
-      if (m.category !== cat) return;
-      // Only show each unique name once in legend
-      const shortName = m.name.replace(' (L)', '').replace(' (R)', '');
-      // Deduplicate by name
-      const existing = container.querySelector(`[data-name="${shortName}"]`);
-      if (existing) return;
+client.init(MODEL_UID, {
+  success: function(sketchfabApi) {
+    api = sketchfabApi;
+    api.start();
 
-      const item = document.createElement('div');
-      item.className = 'legend-item';
-      item.setAttribute('data-name', shortName);
-      item.innerHTML = `
-        <div class="legend-swatch" style="background:#${m.color.toString(16).padStart(6,'0')}"></div>
-        <span class="legend-text">${shortName}</span>
-      `;
-      container.appendChild(item);
+    api.addEventListener('viewerready', () => {
+      document.getElementById('loading-overlay').classList.add('hidden');
+      api.getNodeMap((err, nodes) => {
+        if (!err) {
+          nodeMap = nodes;
+          console.log('Nodes loaded:', Object.keys(nodes).length);
+        }
+      });
     });
-
-    const sep = document.createElement('div');
-    sep.className = 'legend-separator';
-    container.appendChild(sep);
-  });
-})();
-
-// ════════════════════════════════════════════════════
-//  THREE.JS SCENE SETUP
-// ════════════════════════════════════════════════════
-const canvas = document.getElementById('canvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.1;
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0a0f);
-scene.fog = new THREE.FogExp2(0x0a0a0f, 0.04);
-
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(0, 0.3, 3.5);
-
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.06;
-controls.minDistance = 1.8;
-controls.maxDistance = 7;
-controls.target.set(0, 0.1, 0);
-controls.update();
-
-// ── Lights ──
-const ambient = new THREE.AmbientLight(0x223355, 0.8);
-scene.add(ambient);
-
-const keyLight = new THREE.DirectionalLight(0xffeedd, 1.4);
-keyLight.position.set(2, 3, 4);
-keyLight.castShadow = true;
-keyLight.shadow.mapSize.set(2048, 2048);
-scene.add(keyLight);
-
-const fillLight = new THREE.DirectionalLight(0x4488ff, 0.5);
-fillLight.position.set(-3, 1, 2);
-scene.add(fillLight);
-
-const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
-rimLight.position.set(0, -2, -3);
-scene.add(rimLight);
-
-const topLight = new THREE.PointLight(0xaabbff, 0.4, 10);
-topLight.position.set(0, 4, 0);
-scene.add(topLight);
-
-// ════════════════════════════════════════════════════
-//  HEAD MODEL (Primitives)
-// ════════════════════════════════════════════════════
-const headGroup = new THREE.Group();
-scene.add(headGroup);
-
-const skinColor = 0xd4956a;
-const skinMat = new THREE.MeshPhongMaterial({
-  color: skinColor,
-  specular: 0x442211,
-  shininess: 18,
-  side: THREE.FrontSide
+  },
+  error: function() {
+    document.querySelector('.loader-text').textContent = 'Could not load model. Check connection.';
+  },
+  ui_controls: 0,
+  ui_infos: 0,
+  ui_inspector: 0,
+  ui_settings: 0,
+  ui_vr: 0,
+  ui_ar: 0,
+  ui_help: 0,
+  ui_annotations: 0,
+  ui_watermark: 0,
+  ui_fullscreen: 0,
+  ui_theme: 'dark',
+  autostart: 1,
+  preload: 1,
+  transparent: 0,
+  camera: 0,
 });
 
-// — Skull (main cranium) —
-const skullGeo = new THREE.SphereGeometry(1, 64, 48);
-const skull = new THREE.Mesh(skullGeo, skinMat);
-skull.scale.set(0.88, 1.08, 0.96);
-skull.castShadow = true;
-skull.receiveShadow = true;
-headGroup.add(skull);
+// ── Layer Control ────────────────────────────────────────────────────────────
+// Map layer names to keyword patterns in Sketchfab node names
+const LAYER_KEYWORDS = {
+  skin:    ['skin', 'dermis', 'epidermis', 'surface'],
+  muscles: ['muscle', 'musculus', 'masseter', 'temporalis', 'frontalis', 'zygomaticus', 'buccinator', 'orbicularis', 'platysma', 'mentalis', 'risorius', 'corrugator', 'procerus', 'nasalis'],
+  fat:     ['fat', 'fascia', 'adipose', 'subcutaneous'],
+  nerves:  ['nerve', 'nervus', 'neural'],
+  veins:   ['vein', 'artery', 'arteria', 'vena', 'vessel', 'blood'],
+  skull:   ['skull', 'bone', 'cranium', 'mandible', 'maxilla', 'os '],
+};
 
-// — Forehead bulge —
-const foreheadGeo = new THREE.SphereGeometry(0.6, 32, 24);
-const forehead = new THREE.Mesh(foreheadGeo, skinMat);
-forehead.scale.set(1.1, 0.7, 0.55);
-forehead.position.set(0, 0.65, 0.52);
-headGroup.add(forehead);
+function toggleLayer(layerName, visible) {
+  if (!api) return;
+  layerState[layerName] = visible;
 
-// — Jaw / lower face —
-const jawGeo = new THREE.SphereGeometry(0.72, 48, 32);
-const jaw = new THREE.Mesh(jawGeo, skinMat);
-jaw.scale.set(0.82, 0.62, 0.82);
-jaw.position.set(0, -0.72, 0.08);
-headGroup.add(jaw);
-
-// — Cheekbones (L & R) —
-[-1, 1].forEach(side => {
-  const ckGeo = new THREE.SphereGeometry(0.28, 24, 18);
-  const ck = new THREE.Mesh(ckGeo, skinMat);
-  ck.scale.set(1.1, 0.65, 0.7);
-  ck.position.set(side * 0.72, -0.05, 0.55);
-  headGroup.add(ck);
-});
-
-// — Nose —
-const noseBaseGeo = new THREE.SphereGeometry(0.16, 20, 16);
-const noseBase = new THREE.Mesh(noseBaseGeo, skinMat);
-noseBase.scale.set(0.9, 0.7, 1.1);
-noseBase.position.set(0, 0.05, 0.92);
-headGroup.add(noseBase);
-
-const noseBridgeGeo = new THREE.CylinderGeometry(0.045, 0.085, 0.38, 16);
-const noseBridge = new THREE.Mesh(noseBridgeGeo, skinMat);
-noseBridge.position.set(0, 0.26, 0.88);
-noseBridge.rotation.x = -0.22;
-headGroup.add(noseBridge);
-
-// Nose tip
-const noseTipGeo = new THREE.SphereGeometry(0.1, 20, 16);
-const noseTip = new THREE.Mesh(noseTipGeo, skinMat);
-noseTip.scale.set(1.1, 0.75, 1.0);
-noseTip.position.set(0, 0.04, 0.98);
-headGroup.add(noseTip);
-
-// Nostrils (L & R)
-[-1, 1].forEach(side => {
-  const nostrilGeo = new THREE.SphereGeometry(0.07, 14, 12);
-  const nostril = new THREE.Mesh(nostrilGeo, new THREE.MeshPhongMaterial({
-    color: 0xb07850, specular: 0x221100, shininess: 12
-  }));
-  nostril.scale.set(0.9, 0.55, 0.8);
-  nostril.position.set(side * 0.11, 0.0, 0.96);
-  headGroup.add(nostril);
-});
-
-// — Eye sockets (depressions) —
-const eyeWhiteMat = new THREE.MeshPhongMaterial({ color: 0xf0ede8 });
-const irisMat_L = new THREE.MeshPhongMaterial({ color: 0x2255aa });
-const irisMat_R = new THREE.MeshPhongMaterial({ color: 0x2255aa });
-const pupilMat = new THREE.MeshPhongMaterial({ color: 0x050508 });
-
-[-1, 1].forEach((side, i) => {
-  const ex = side * 0.32, ey = 0.26, ez = 0.84;
-
-  // Socket depression
-  const socketGeo = new THREE.SphereGeometry(0.18, 24, 18);
-  const socket = new THREE.Mesh(socketGeo, new THREE.MeshPhongMaterial({
-    color: 0xb07850, specular: 0x110800, shininess: 8
-  }));
-  socket.scale.set(1.3, 0.95, 0.55);
-  socket.position.set(ex, ey, ez - 0.06);
-  headGroup.add(socket);
-
-  // Eyeball
-  const eyeGeo = new THREE.SphereGeometry(0.13, 24, 20);
-  const eye = new THREE.Mesh(eyeGeo, eyeWhiteMat);
-  eye.position.set(ex, ey, ez - 0.02);
-  headGroup.add(eye);
-
-  // Iris
-  const irisGeo = new THREE.CircleGeometry(0.075, 24);
-  const iris = new THREE.Mesh(irisGeo, i === 0 ? irisMat_L : irisMat_R);
-  iris.position.set(ex, ey, ez + 0.115);
-  headGroup.add(iris);
-
-  // Pupil
-  const pupilGeo = new THREE.CircleGeometry(0.038, 20);
-  const pupil = new THREE.Mesh(pupilGeo, pupilMat);
-  pupil.position.set(ex, ey, ez + 0.118);
-  headGroup.add(pupil);
-
-  // Eyelid top
-  const lidGeo = new THREE.SphereGeometry(0.14, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.5);
-  const lid = new THREE.Mesh(lidGeo, skinMat);
-  lid.scale.set(1.3, 0.8, 0.5);
-  lid.position.set(ex, ey + 0.01, ez + 0.06);
-  headGroup.add(lid);
-});
-
-// — Lips —
-const lipMat = new THREE.MeshPhongMaterial({ color: 0xb06050, specular: 0x441122, shininess: 30 });
-
-// Upper lip
-const upperLipGeo = new THREE.SphereGeometry(0.18, 24, 16);
-const upperLip = new THREE.Mesh(upperLipGeo, lipMat);
-upperLip.scale.set(1.5, 0.45, 0.55);
-upperLip.position.set(0, -0.42, 0.88);
-headGroup.add(upperLip);
-
-// Lower lip
-const lowerLipGeo = new THREE.SphereGeometry(0.18, 24, 16);
-const lowerLip = new THREE.Mesh(lowerLipGeo, lipMat);
-lowerLip.scale.set(1.5, 0.5, 0.58);
-lowerLip.position.set(0, -0.56, 0.87);
-headGroup.add(lowerLip);
-
-// Mouth corner dimples
-[-1, 1].forEach(side => {
-  const dimpleGeo = new THREE.SphereGeometry(0.04, 12, 10);
-  const dimple = new THREE.Mesh(dimpleGeo, new THREE.MeshPhongMaterial({ color: 0x9a5040 }));
-  dimple.position.set(side * 0.24, -0.49, 0.85);
-  headGroup.add(dimple);
-});
-
-// — Ears —
-[-1, 1].forEach(side => {
-  const earGeo = new THREE.SphereGeometry(0.22, 24, 18);
-  const ear = new THREE.Mesh(earGeo, skinMat);
-  ear.scale.set(0.28, 0.65, 0.55);
-  ear.position.set(side * 0.92, 0.05, 0.0);
-  headGroup.add(ear);
-
-  // Inner ear
-  const innerGeo = new THREE.SphereGeometry(0.14, 16, 12);
-  const inner = new THREE.Mesh(innerGeo, new THREE.MeshPhongMaterial({ color: 0xc07055 }));
-  inner.scale.set(0.2, 0.5, 0.4);
-  inner.position.set(side * 0.91, 0.04, 0.02);
-  headGroup.add(inner);
-
-  // Earlobe
-  const lobeGeo = new THREE.SphereGeometry(0.1, 14, 12);
-  const lobe = new THREE.Mesh(lobeGeo, skinMat);
-  lobe.scale.set(0.7, 0.8, 0.55);
-  lobe.position.set(side * 0.9, -0.28, 0.0);
-  headGroup.add(lobe);
-});
-
-// — Neck —
-const neckGeo = new THREE.CylinderGeometry(0.38, 0.46, 0.7, 24);
-const neck = new THREE.Mesh(neckGeo, skinMat);
-neck.position.set(0, -1.25, -0.08);
-headGroup.add(neck);
-
-// Neck transition
-const neckTopGeo = new THREE.SphereGeometry(0.4, 24, 18);
-const neckTop = new THREE.Mesh(neckTopGeo, skinMat);
-neckTop.scale.set(0.95, 0.5, 0.9);
-neckTop.position.set(0, -1.0, -0.05);
-headGroup.add(neckTop);
-
-// ════════════════════════════════════════════════════
-//  MUSCLE MESH HELPERS
-// ════════════════════════════════════════════════════
-const muscleMeshes = []; // all clickable muscle meshes
-const muscleMap = new Map(); // mesh uuid → muscle key
-
-function makeMat(hexColor, opacity = 0.78) {
-  return new THREE.MeshPhongMaterial({
-    color: hexColor,
-    emissive: new THREE.Color(hexColor).multiplyScalar(0.12),
-    specular: 0x222222,
-    shininess: 14,
-    transparent: true,
-    opacity: opacity,
-    side: THREE.FrontSide,
-    depthWrite: false
+  const keywords = LAYER_KEYWORDS[layerName] || [];
+  Object.values(nodeMap).forEach(node => {
+    const name = (node.name || '').toLowerCase();
+    const matches = keywords.some(kw => name.includes(kw));
+    if (matches) {
+      if (visible) api.show(node.instanceID);
+      else api.hide(node.instanceID);
+    }
   });
 }
 
-function addMuscle(key, geo, mat, position, scale, rotation) {
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.copy(position);
-  if (scale) mesh.scale.copy(scale);
-  if (rotation) {
-    mesh.rotation.x = rotation.x || 0;
-    mesh.rotation.y = rotation.y || 0;
-    mesh.rotation.z = rotation.z || 0;
-  }
-  mesh.userData.muscleKey = key;
-  mesh.userData.originalColor = mat.color.getHex();
-  mesh.userData.originalEmissive = mat.emissive.getHex();
-  mesh.userData.originalOpacity = opacity;
-  headGroup.add(mesh);
-  muscleMeshes.push(mesh);
-  muscleMap.set(mesh.uuid, key);
-  return mesh;
+function applyPreset(preset) {
+  const presets = {
+    muscles: { skin: false, muscles: true, fat: false, nerves: false, veins: false, skull: false },
+    skull:   { skin: false, muscles: true, fat: false, nerves: false, veins: false, skull: true },
+    all:     { skin: true,  muscles: true, fat: true,  nerves: true,  veins: true,  skull: true },
+  };
+
+  const config = presets[preset];
+  Object.entries(config).forEach(([layer, visible]) => {
+    layerState[layer] = visible;
+    toggleLayer(layer, visible);
+  });
+
+  // Sync button states
+  document.querySelectorAll('.layer-btn[data-layer]').forEach(btn => {
+    const layer = btn.dataset.layer;
+    btn.classList.toggle('active', layerState[layer]);
+  });
 }
 
-// ════════════════════════════════════════════════════
-//  MUSCLE MESHES — positioned on head surface
-// ════════════════════════════════════════════════════
-
-// ── FRONTALIS (forehead band) ──
-{
-  const geo = new THREE.SphereGeometry(0.42, 32, 20);
-  const mat = makeMat(MUSCLES.frontalis.color);
-  const m = new THREE.Mesh(geo, mat);
-  m.scale.set(1.85, 0.28, 0.38);
-  m.position.set(0, 0.72, 0.62);
-  m.userData.muscleKey = 'frontalis';
-  m.userData.originalColor = mat.color.getHex();
-  m.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m);
-  muscleMeshes.push(m);
-  muscleMap.set(m.uuid, 'frontalis');
-}
-
-// ── CORRUGATOR SUPERCILII (L & R) ──
-[[-1,'corrugatorSupercilii_L'],[1,'corrugatorSupercilii_R']].forEach(([side, key]) => {
-  const geo = new THREE.SphereGeometry(0.1, 16, 12);
-  const mat = makeMat(MUSCLES[key].color);
-  const m = new THREE.Mesh(geo, mat);
-  m.scale.set(1.4, 0.55, 0.45);
-  m.position.set(side * 0.18, 0.54, 0.78);
-  m.rotation.z = side * 0.22;
-  m.userData.muscleKey = key;
-  m.userData.originalColor = mat.color.getHex();
-  m.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m);
-  muscleMeshes.push(m);
-  muscleMap.set(m.uuid, key);
+document.querySelectorAll('.layer-btn[data-layer]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const layer = btn.dataset.layer;
+    const newState = !layerState[layer];
+    toggleLayer(layer, newState);
+    btn.classList.toggle('active', newState);
+  });
 });
 
-// ── ORBICULARIS OCULI (L & R) ──
-[[-1,'orbicularisOculi_L'],[1,'orbicularisOculi_R']].forEach(([side, key]) => {
-  const geo = new THREE.TorusGeometry(0.185, 0.055, 14, 36);
-  const mat = makeMat(MUSCLES[key].color, 0.72);
-  const m = new THREE.Mesh(geo, mat);
-  m.scale.set(1.35, 0.9, 1.0);
-  m.position.set(side * 0.32, 0.265, 0.84);
-  m.rotation.y = side * 0.28;
-  m.rotation.x = -0.12;
-  m.userData.muscleKey = key;
-  m.userData.originalColor = mat.color.getHex();
-  m.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m);
-  muscleMeshes.push(m);
-  muscleMap.set(m.uuid, key);
+// ── Muscle List ───────────────────────────────────────────────────────────────
+const muscleList = document.getElementById('muscle-list');
+
+MUSCLES.forEach(m => {
+  const item = document.createElement('div');
+  item.className = 'muscle-item';
+  item.id = `muscle-item-${m.id}`;
+  item.innerHTML = `
+    <span class="muscle-dot" style="background:${m.color}"></span>
+    <span class="muscle-item-name">${m.name}</span>
+    <span class="muscle-item-arrow">›</span>
+  `;
+  item.addEventListener('click', () => selectMuscle(m));
+  muscleList.appendChild(item);
 });
 
-// ── NASALIS (L & R) ──
-[[-1,'nasalis_L'],[1,'nasalis_R']].forEach(([side, key]) => {
-  const geo = new THREE.SphereGeometry(0.075, 14, 12);
-  const mat = makeMat(MUSCLES[key].color, 0.8);
-  const m = new THREE.Mesh(geo, mat);
-  m.scale.set(0.7, 1.2, 0.55);
-  m.position.set(side * 0.1, 0.12, 0.92);
-  m.userData.muscleKey = key;
-  m.userData.originalColor = mat.color.getHex();
-  m.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m);
-  muscleMeshes.push(m);
-  muscleMap.set(m.uuid, key);
-});
-
-// ── TEMPORALIS (L & R) ──
-[[-1,'temporalis_L'],[1,'temporalis_R']].forEach(([side, key]) => {
-  const geo = new THREE.SphereGeometry(0.38, 24, 18);
-  const mat = makeMat(MUSCLES[key].color, 0.70);
-  const m = new THREE.Mesh(geo, mat);
-  m.scale.set(0.55, 0.95, 0.65);
-  m.position.set(side * 0.82, 0.38, 0.1);
-  m.rotation.y = side * 0.35;
-  m.userData.muscleKey = key;
-  m.userData.originalColor = mat.color.getHex();
-  m.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m);
-  muscleMeshes.push(m);
-  muscleMap.set(m.uuid, key);
-});
-
-// ── MASSETER (L & R) ──
-[[-1,'masseter_L'],[1,'masseter_R']].forEach(([side, key]) => {
-  const geo = new THREE.BoxGeometry(0.26, 0.38, 0.22);
-  const mat = makeMat(MUSCLES[key].color, 0.78);
-  const m = new THREE.Mesh(geo, mat);
-  // Round off by using SphereGeometry instead for softer look
-  const geo2 = new THREE.SphereGeometry(0.2, 20, 16);
-  const m2 = new THREE.Mesh(geo2, mat);
-  m2.scale.set(0.88, 1.35, 0.72);
-  m2.position.set(side * 0.72, -0.35, 0.5);
-  m2.rotation.y = side * 0.25;
-  m2.userData.muscleKey = key;
-  m2.userData.originalColor = mat.color.getHex();
-  m2.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m2);
-  muscleMeshes.push(m2);
-  muscleMap.set(m2.uuid, key);
-});
-
-// ── ZYGOMATICUS MAJOR (L & R) — diagonal cheek band ──
-[[-1,'zygomaticusMajor_L'],[1,'zygomaticusMajor_R']].forEach(([side, key]) => {
-  const geo = new THREE.CylinderGeometry(0.055, 0.07, 0.52, 14);
-  const mat = makeMat(MUSCLES[key].color, 0.80);
-  const m = new THREE.Mesh(geo, mat);
-  m.scale.set(1.0, 1.0, 0.7);
-  m.position.set(side * 0.5, -0.08, 0.72);
-  // Angle diagonally from cheekbone down to mouth corner
-  m.rotation.z = side * -0.78;
-  m.rotation.x = 0.2;
-  m.rotation.y = side * 0.22;
-  m.userData.muscleKey = key;
-  m.userData.originalColor = mat.color.getHex();
-  m.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m);
-  muscleMeshes.push(m);
-  muscleMap.set(m.uuid, key);
-});
-
-// ── ZYGOMATICUS MINOR (L & R) ──
-[[-1,'zygomaticusMinor_L'],[1,'zygomaticusMinor_R']].forEach(([side, key]) => {
-  const geo = new THREE.CylinderGeometry(0.04, 0.05, 0.34, 12);
-  const mat = makeMat(MUSCLES[key].color, 0.78);
-  const m = new THREE.Mesh(geo, mat);
-  m.position.set(side * 0.36, 0.0, 0.78);
-  m.rotation.z = side * -0.62;
-  m.rotation.x = 0.15;
-  m.rotation.y = side * 0.18;
-  m.userData.muscleKey = key;
-  m.userData.originalColor = mat.color.getHex();
-  m.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m);
-  muscleMeshes.push(m);
-  muscleMap.set(m.uuid, key);
-});
-
-// ── BUCCINATOR (L & R) ──
-[[-1,'buccinator_L'],[1,'buccinator_R']].forEach(([side, key]) => {
-  const geo = new THREE.SphereGeometry(0.18, 18, 14);
-  const mat = makeMat(MUSCLES[key].color, 0.72);
-  const m = new THREE.Mesh(geo, mat);
-  m.scale.set(1.2, 0.72, 0.42);
-  m.position.set(side * 0.52, -0.38, 0.68);
-  m.rotation.y = side * 0.18;
-  m.userData.muscleKey = key;
-  m.userData.originalColor = mat.color.getHex();
-  m.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m);
-  muscleMeshes.push(m);
-  muscleMap.set(m.uuid, key);
-});
-
-// ── RISORIUS (L & R) ──
-[[-1,'risorius_L'],[1,'risorius_R']].forEach(([side, key]) => {
-  const geo = new THREE.CylinderGeometry(0.03, 0.038, 0.32, 10);
-  const mat = makeMat(MUSCLES[key].color, 0.80);
-  const m = new THREE.Mesh(geo, mat);
-  m.scale.set(1.0, 1.0, 0.6);
-  m.position.set(side * 0.38, -0.48, 0.75);
-  m.rotation.z = Math.PI * 0.5;
-  m.rotation.x = 0.1;
-  m.userData.muscleKey = key;
-  m.userData.originalColor = mat.color.getHex();
-  m.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m);
-  muscleMeshes.push(m);
-  muscleMap.set(m.uuid, key);
-});
-
-// ── LEVATOR LABII SUPERIORIS (L & R) ──
-[[-1,'levatorLabiiSuperioris_L'],[1,'levatorLabiiSuperioris_R']].forEach(([side, key]) => {
-  const geo = new THREE.SphereGeometry(0.1, 14, 12);
-  const mat = makeMat(MUSCLES[key].color, 0.82);
-  const m = new THREE.Mesh(geo, mat);
-  m.scale.set(0.9, 1.55, 0.45);
-  m.position.set(side * 0.2, -0.24, 0.86);
-  m.rotation.z = side * 0.12;
-  m.userData.muscleKey = key;
-  m.userData.originalColor = mat.color.getHex();
-  m.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m);
-  muscleMeshes.push(m);
-  muscleMap.set(m.uuid, key);
-});
-
-// ── ORBICULARIS ORIS (ring around mouth) ──
-{
-  const geo = new THREE.TorusGeometry(0.2, 0.068, 14, 40);
-  const mat = makeMat(MUSCLES.orbicularisOris.color, 0.82);
-  const m = new THREE.Mesh(geo, mat);
-  m.scale.set(1.45, 0.88, 1.0);
-  m.position.set(0, -0.488, 0.86);
-  m.rotation.x = 0.08;
-  m.userData.muscleKey = 'orbicularisOris';
-  m.userData.originalColor = mat.color.getHex();
-  m.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m);
-  muscleMeshes.push(m);
-  muscleMap.set(m.uuid, 'orbicularisOris');
-}
-
-// ── DEPRESSOR LABII INFERIORIS (L & R) ──
-[[-1,'depressorLabiiInferioris_L'],[1,'depressorLabiiInferioris_R']].forEach(([side, key]) => {
-  const geo = new THREE.SphereGeometry(0.09, 14, 12);
-  const mat = makeMat(MUSCLES[key].color, 0.82);
-  const m = new THREE.Mesh(geo, mat);
-  m.scale.set(0.85, 1.3, 0.5);
-  m.position.set(side * 0.14, -0.64, 0.84);
-  m.userData.muscleKey = key;
-  m.userData.originalColor = mat.color.getHex();
-  m.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m);
-  muscleMeshes.push(m);
-  muscleMap.set(m.uuid, key);
-});
-
-// ── MENTALIS (chin) ──
-{
-  const geo = new THREE.SphereGeometry(0.14, 18, 14);
-  const mat = makeMat(MUSCLES.mentalis.color, 0.80);
-  const m = new THREE.Mesh(geo, mat);
-  m.scale.set(1.1, 0.85, 0.6);
-  m.position.set(0, -0.82, 0.72);
-  m.userData.muscleKey = 'mentalis';
-  m.userData.originalColor = mat.color.getHex();
-  m.userData.originalEmissive = mat.emissive.getHex();
-  headGroup.add(m);
-  muscleMeshes.push(m);
-  muscleMap.set(m.uuid, 'mentalis');
-}
-
-// ════════════════════════════════════════════════════
-//  RAYCASTING & INTERACTION
-// ════════════════════════════════════════════════════
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-let hoveredMesh = null;
-let selectedMesh = null;
-let isDragging = false;
-let mouseDownPos = { x: 0, y: 0 };
-
-function hexToCSS(hex) {
-  return '#' + hex.toString(16).padStart(6, '0');
-}
-
-function highlightMesh(mesh, type) {
-  // type: 'hover' | 'select' | 'none'
-  if (!mesh) return;
-  const mat = mesh.material;
-  if (type === 'select') {
-    mat.color.setHex(0xffee44);
-    mat.emissive.setHex(0x885500);
-    mat.opacity = 0.92;
-  } else if (type === 'hover') {
-    const orig = new THREE.Color(mesh.userData.originalColor);
-    mat.color.copy(orig.clone().lerp(new THREE.Color(0xffffff), 0.28));
-    mat.emissive.setHex(mesh.userData.originalColor).multiplyScalar(0.3);
-    mat.opacity = 0.88;
-  } else {
-    mat.color.setHex(mesh.userData.originalColor);
-    const orig = new THREE.Color(mesh.userData.originalColor);
-    mat.emissive.copy(orig.clone().multiplyScalar(0.12));
-    mat.opacity = mesh.userData.originalOpacity !== undefined ? mesh.userData.originalOpacity : 0.78;
-  }
-}
-
-function resetMesh(mesh) {
-  if (!mesh) return;
-  const mat = mesh.material;
-  mat.color.setHex(mesh.userData.originalColor);
-  const orig = new THREE.Color(mesh.userData.originalColor);
-  mat.emissive.copy(orig.clone().multiplyScalar(0.12));
-  mat.opacity = 0.78;
-}
-
-// Info Panel
-const infoPanel = document.getElementById('info-panel');
-const muscleNameEl = document.getElementById('muscle-name');
-const muscleSwatchEl = document.getElementById('muscle-color-swatch');
-const infoOrigin = document.getElementById('info-origin');
-const infoInsertion = document.getElementById('info-insertion');
-const infoFunction = document.getElementById('info-function');
-const infoExpressions = document.getElementById('info-expressions');
-const hintEl = document.getElementById('hint');
-
-function showInfo(key) {
-  const m = MUSCLES[key];
-  if (!m) return;
-  muscleNameEl.textContent = m.name;
-  const cssColor = hexToCSS(m.color);
-  muscleSwatchEl.style.background = cssColor;
-  muscleSwatchEl.style.boxShadow = `0 0 8px ${cssColor}`;
-  infoOrigin.textContent = m.origin;
-  infoInsertion.textContent = m.insertion;
-  infoFunction.textContent = m.function;
-  infoExpressions.textContent = m.expressions;
-  infoPanel.classList.add('visible');
-  hintEl.classList.add('hidden');
-}
-
-function hideInfo() {
-  infoPanel.classList.remove('visible');
-  setTimeout(() => { hintEl.classList.remove('hidden'); }, 800);
-}
-
-document.getElementById('info-close').addEventListener('click', () => {
-  hideInfo();
-  if (selectedMesh) {
-    resetMesh(selectedMesh);
-    selectedMesh = null;
-  }
-});
-
-// Mouse events
-renderer.domElement.addEventListener('mousedown', e => {
-  mouseDownPos.x = e.clientX;
-  mouseDownPos.y = e.clientY;
-  isDragging = false;
-});
-
-renderer.domElement.addEventListener('mousemove', e => {
-  const dx = e.clientX - mouseDownPos.x;
-  const dy = e.clientY - mouseDownPos.y;
-  if (Math.abs(dx) > 4 || Math.abs(dy) > 4) isDragging = true;
-
-  // Update mouse for raycasting
-  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-  raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObjects(muscleMeshes);
-  const hit = hits.length > 0 ? hits[0].object : null;
-
-  if (hit !== hoveredMesh) {
-    // Restore previous hover
-    if (hoveredMesh && hoveredMesh !== selectedMesh) {
-      resetMesh(hoveredMesh);
-    }
-    hoveredMesh = hit;
-    if (hoveredMesh && hoveredMesh !== selectedMesh) {
-      highlightMesh(hoveredMesh, 'hover');
-    }
-    renderer.domElement.style.cursor = hit ? 'pointer' : 'default';
-  }
-});
-
-renderer.domElement.addEventListener('mouseup', e => {
-  if (isDragging) return;
-  const dx = e.clientX - mouseDownPos.x;
-  const dy = e.clientY - mouseDownPos.y;
-  if (Math.abs(dx) > 5 || Math.abs(dy) > 5) return;
-
-  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-  raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObjects(muscleMeshes);
-
+// ── Muscle Selection ──────────────────────────────────────────────────────────
+function selectMuscle(muscle) {
   // Deselect previous
-  if (selectedMesh) {
-    resetMesh(selectedMesh);
-    selectedMesh = null;
+  document.querySelectorAll('.muscle-item').forEach(el => el.classList.remove('selected'));
+  document.getElementById('muscle-card')?.classList.remove('highlighted');
+
+  if (selectedMuscleId === muscle.id) {
+    selectedMuscleId = null;
+    updateInfoPanel(null);
+    return;
   }
 
-  if (hits.length > 0) {
-    const mesh = hits[0].object;
-    selectedMesh = mesh;
-    highlightMesh(mesh, 'select');
-    showInfo(mesh.userData.muscleKey);
-  } else {
-    hideInfo();
+  selectedMuscleId = muscle.id;
+
+  // Highlight in list
+  const item = document.getElementById(`muscle-item-${muscle.id}`);
+  if (item) item.classList.add('selected');
+
+  // Update info panel
+  updateInfoPanel(muscle);
+
+  // Switch to info tab
+  switchTab('info');
+
+  // Try to highlight in 3D model via camera focus on annotation or node search
+  if (api) {
+    const keywords = muscle.id.split('-').concat(muscle.name.toLowerCase().split(' '));
+    Object.values(nodeMap).forEach(node => {
+      const name = (node.name || '').toLowerCase();
+      const isMatch = keywords.some(kw => kw.length > 3 && name.includes(kw));
+      if (isMatch && node.instanceID !== undefined) {
+        api.show(node.instanceID);
+      }
+    });
   }
-});
-
-// Touch support
-renderer.domElement.addEventListener('touchend', e => {
-  if (e.changedTouches.length === 0) return;
-  const touch = e.changedTouches[0];
-  mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
-  raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObjects(muscleMeshes);
-  if (selectedMesh) { resetMesh(selectedMesh); selectedMesh = null; }
-  if (hits.length > 0) {
-    selectedMesh = hits[0].object;
-    highlightMesh(selectedMesh, 'select');
-    showInfo(selectedMesh.userData.muscleKey);
-  } else {
-    hideInfo();
-  }
-  e.preventDefault();
-}, { passive: false });
-
-// ════════════════════════════════════════════════════
-//  RESIZE
-// ════════════════════════════════════════════════════
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-// ════════════════════════════════════════════════════
-//  AMBIENT PARTICLE FIELD (subtle atmosphere)
-// ════════════════════════════════════════════════════
-const particleCount = 280;
-const particleGeo = new THREE.BufferGeometry();
-const positions = new Float32Array(particleCount * 3);
-for (let i = 0; i < particleCount; i++) {
-  positions[i * 3]     = (Math.random() - 0.5) * 12;
-  positions[i * 3 + 1] = (Math.random() - 0.5) * 12;
-  positions[i * 3 + 2] = (Math.random() - 0.5) * 12;
-}
-particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-const particleMat = new THREE.PointsMaterial({
-  color: 0x3366aa, size: 0.025, transparent: true, opacity: 0.35
-});
-const particles = new THREE.Points(particleGeo, particleMat);
-scene.add(particles);
-
-// ════════════════════════════════════════════════════
-//  GRID / FLOOR REFLECTION (subtle)
-// ════════════════════════════════════════════════════
-const gridHelper = new THREE.GridHelper(8, 20, 0x112244, 0x0d1a33);
-gridHelper.position.y = -2.2;
-gridHelper.material.transparent = true;
-gridHelper.material.opacity = 0.35;
-scene.add(gridHelper);
-
-// ════════════════════════════════════════════════════
-//  ANIMATION LOOP
-// ════════════════════════════════════════════════════
-let t = 0;
-function animate() {
-  requestAnimationFrame(animate);
-  t += 0.005;
-
-  controls.update();
-
-  // Gentle passive head bob (very subtle)
-  headGroup.rotation.y = Math.sin(t * 0.3) * 0.008;
-
-  // Particle drift
-  particles.rotation.y += 0.0003;
-  particles.rotation.x += 0.0001;
-
-  renderer.render(scene, camera);
 }
 
-// ════════════════════════════════════════════════════
-//  INIT — hide loading overlay
-// ════════════════════════════════════════════════════
-window.addEventListener('load', () => {
-  animate();
-  const loading = document.getElementById('loading');
-  setTimeout(() => {
-    loading.classList.add('fade-out');
-    setTimeout(() => { loading.style.display = 'none'; }, 700);
-  }, 900);
+function updateInfoPanel(muscle) {
+  const card = document.getElementById('muscle-card');
+  if (!muscle) {
+    document.getElementById('muscle-title').textContent = 'Select a muscle';
+    document.getElementById('muscle-title').style.color = '#475569';
+    document.getElementById('muscle-latin').textContent = '';
+    document.getElementById('muscle-function').textContent = 'Click any muscle in the list or on the 3D model to see detailed anatomical information.';
+    document.getElementById('muscle-expressions').textContent = '—';
+    document.getElementById('muscle-expressions').style.color = '#475569';
+    card?.classList.remove('highlighted');
+    return;
+  }
+
+  document.getElementById('muscle-title').textContent = muscle.name;
+  document.getElementById('muscle-title').style.color = muscle.color;
+  document.getElementById('muscle-latin').textContent = muscle.latin;
+  document.getElementById('muscle-function').textContent = muscle.function;
+  document.getElementById('muscle-expressions').textContent = muscle.expressions;
+  document.getElementById('muscle-expressions').style.color = '#a78bfa';
+  card?.classList.add('highlighted');
+}
+
+// ── Tab Switching ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === `tab-${name}`);
+  });
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
-
-// Also animate immediately in case load already fired
-animate();
-setTimeout(() => {
-  const loading = document.getElementById('loading');
-  loading.classList.add('fade-out');
-  setTimeout(() => { loading.style.display = 'none'; }, 700);
-}, 1200);
-
 </script>
 </body>
 </html>
