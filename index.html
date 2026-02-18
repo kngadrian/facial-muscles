@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Facial Muscles — Interactive Anatomy</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e1a; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+  #canvas-container { width: 100vw; height: 100vh; }
+  canvas { display: block; }
+
+  #info-panel {
+    position: fixed; top: 20px; right: 20px;
+    width: 300px; background: rgba(10,14,26,0.92);
+    border: 1px solid rgba(96,165,250,0.3);
+    border-radius: 16px; padding: 24px;
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  #info-panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #60a5fa; margin-bottom: 16px; }
+  #muscle-name { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 8px; min-height: 28px; }
+  #muscle-latin { font-size: 13px; color: #94a3b8; font-style: italic; margin-bottom: 16px; min-height: 18px; }
+  #muscle-function { font-size: 14px; line-height: 1.6; color: #cbd5e1; margin-bottom: 12px; min-height: 40px; }
+  #muscle-expressions { font-size: 13px; color: #a78bfa; line-height: 1.5; }
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #475569; margin-bottom: 4px; }
+  .divider { height: 1px; background: rgba(96,165,250,0.15); margin: 14px 0; }
+  #color-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+
+  #title-panel {
+    position: fixed; top: 20px; left: 20px;
+    background: rgba(10,14,26,0.85);
+    border: 1px solid rgba(96,165,250,0.2);
+    border-radius: 12px; padding: 16px 20px;
+    backdrop-filter: blur(8px);
+  }
+  #title-panel h1 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  #title-panel p { font-size: 12px; color: #64748b; }
+
+  #legend {
+    position: fixed; bottom: 20px; left: 20px;
+    background: rgba(10,14,26,0.85);
+    border: 1px solid rgba(96,165,250,0.2);
+    border-radius: 12px; padding: 16px 20px;
+    backdrop-filter: blur(8px);
+    max-width: 280px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  #legend h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #60a5fa; margin-bottom: 12px; }
+  .legend-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 8px; border-radius: 6px;
+    cursor: pointer; transition: background 0.2s;
+    font-size: 12px; color: #94a3b8;
+  }
+  .legend-item:hover { background: rgba(96,165,250,0.1); color: #e0e0e0; }
+  .legend-item.active { background: rgba(96,165,250,0.15); color: #fff; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  #hint {
+    position: fixed; bottom: 20px; right: 20px;
+    font-size: 12px; color: #475569;
+    text-align: right; line-height: 1.8;
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(96,165,250,0.3); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="canvas-container"></div>
+
+<div id="title-panel">
+  <h1>🧠 Facial Muscles</h1>
+  <p>3D Interactive Anatomy</p>
+</div>
+
+<div id="info-panel">
+  <h2>Selected Muscle</h2>
+  <div id="muscle-name" style="color:#475569">Click a muscle to learn more</div>
+  <div id="muscle-latin"></div>
+  <div class="divider"></div>
+  <div class="label">Function</div>
+  <div id="muscle-function" style="color:#475569">Hover or click any highlighted area on the 3D model.</div>
+  <div class="divider"></div>
+  <div class="label">Controls Expressions</div>
+  <div id="muscle-expressions"></div>
+</div>
+
+<div id="legend">
+  <h3>Muscle Groups</h3>
+  <div id="legend-items"></div>
+</div>
+
+<div id="hint">
+  🖱 Drag to rotate<br>
+  🔍 Scroll to zoom<br>
+  👆 Click muscle to inspect
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ── Muscle Data ──────────────────────────────────────────────────────────────
+const MUSCLES = [
+  {
+    id: 'frontalis',
+    name: 'Frontalis',
+    latin: 'Musculus frontalis',
+    color: '#f59e0b',
+    function: 'Raises the eyebrows and wrinkles the skin of the forehead horizontally. The only muscle that can raise the upper eyelid.',
+    expressions: 'Surprise, fear, worry, skepticism (raised brow)',
+    // position on head: [x, y, z], scale [sx, sy, sz]
+    regions: [
+      { pos: [0, 1.08, 0.72], scale: [0.55, 0.18, 0.08] },
+    ]
+  },
+  {
+    id: 'temporalis',
+    name: 'Temporalis',
+    latin: 'Musculus temporalis',
+    color: '#ef4444',
+    function: 'Elevates the mandible (closes the jaw) and retracts the mandible. One of the primary muscles of mastication (chewing).',
+    expressions: 'Chewing, clenching jaw, biting',
+    regions: [
+      { pos: [-0.82, 0.75, 0.1], scale: [0.28, 0.42, 0.22] },
+      { pos: [0.82, 0.75, 0.1], scale: [0.28, 0.42, 0.22] },
+    ]
+  },
+  {
+    id: 'orbicularis-oculi',
+    name: 'Orbicularis Oculi',
+    latin: 'Musculus orbicularis oculi',
+    color: '#8b5cf6',
+    function: 'Closes the eyelid. The orbital part forcefully closes the eye; the palpebral part gently closes it. Also assists in tear drainage.',
+    expressions: 'Blinking, squinting, winking, crying (tightly shut)',
+    regions: [
+      { pos: [-0.3, 0.82, 0.88], scale: [0.22, 0.13, 0.07], rotZ: 0.2 },
+      { pos: [0.3, 0.82, 0.88], scale: [0.22, 0.13, 0.07], rotZ: -0.2 },
+    ]
+  },
+  {
+    id: 'corrugator',
+    name: 'Corrugator Supercilii',
+    latin: 'Musculus corrugator supercilii',
+    color: '#06b6d4',
+    function: 'Draws the eyebrows downward and medially, creating vertical wrinkles between the brows — the "frown lines".',
+    expressions: 'Frowning, concentration, anger, pain',
+    regions: [
+      { pos: [-0.15, 0.92, 0.88], scale: [0.14, 0.06, 0.06] },
+      { pos: [0.15, 0.92, 0.88], scale: [0.14, 0.06, 0.06] },
+    ]
+  },
+  {
+    id: 'procerus',
+    name: 'Procerus',
+    latin: 'Musculus procerus',
+    color: '#10b981',
+    function: 'Pulls the medial angle of the eyebrow downward, producing horizontal wrinkles over the bridge of the nose.',
+    expressions: 'Disgust, concentration, squinting in bright light',
+    regions: [
+      { pos: [0, 0.82, 0.95], scale: [0.1, 0.1, 0.06] },
+    ]
+  },
+  {
+    id: 'nasalis',
+    name: 'Nasalis',
+    latin: 'Musculus nasalis',
+    color: '#f97316',
+    function: 'Compresses the bridge and dilates the nostrils. Has two parts: transverse (compressor) and alar (dilator).',
+    expressions: 'Flaring nostrils, sniffing, disgust',
+    regions: [
+      { pos: [-0.12, 0.6, 0.98], scale: [0.1, 0.12, 0.06] },
+      { pos: [0.12, 0.6, 0.98], scale: [0.1, 0.12, 0.06] },
+    ]
+  },
+  {
+    id: 'levator-labii',
+    name: 'Levator Labii Superioris',
+    latin: 'Musculus levator labii superioris',
+    color: '#84cc16',
+    function: 'Elevates the upper lip, exposing the maxillary teeth. Also deepens the nasolabial fold.',
+    expressions: 'Sneering, contempt, Elvis lip curl',
+    regions: [
+      { pos: [-0.22, 0.48, 0.96], scale: [0.12, 0.14, 0.06] },
+      { pos: [0.22, 0.48, 0.96], scale: [0.12, 0.14, 0.06] },
+    ]
+  },
+  {
+    id: 'zygomaticus-major',
+    name: 'Zygomaticus Major',
+    latin: 'Musculus zygomaticus major',
+    color: '#ec4899',
+    function: 'Draws the angle of the mouth superiorly and posteriorly — the primary smiling muscle. Runs from the zygomatic bone to the corner of the mouth.',
+    expressions: 'Smiling, laughing, joyful expressions',
+    regions: [
+      { pos: [-0.52, 0.48, 0.78], scale: [0.18, 0.28, 0.08], rotZ: 0.5 },
+      { pos: [0.52, 0.48, 0.78], scale: [0.18, 0.28, 0.08], rotZ: -0.5 },
+    ]
+  },
+  {
+    id: 'zygomaticus-minor',
+    name: 'Zygomaticus Minor',
+    latin: 'Musculus zygomaticus minor',
+    color: '#f472b6',
+    function: 'Elevates the upper lip and deepens the nasolabial fold. Works alongside zygomaticus major in smiling.',
+    expressions: 'Smiling (subtle), sadness',
+    regions: [
+      { pos: [-0.38, 0.52, 0.88], scale: [0.1, 0.18, 0.06], rotZ: 0.3 },
+      { pos: [0.38, 0.52, 0.88], scale: [0.1, 0.18, 0.06], rotZ: -0.3 },
+    ]
+  },
+  {
+    id: 'masseter',
+    name: 'Masseter',
+    latin: 'Musculus masseter',
+    color: '#dc2626',
+    function: 'The most powerful chewing muscle. Elevates the mandible to close the jaw. Superficial part protrudes jaw; deep part retracts it.',
+    expressions: 'Chewing, biting, jaw clenching (anger/stress)',
+    regions: [
+      { pos: [-0.72, 0.22, 0.72], scale: [0.22, 0.32, 0.18] },
+      { pos: [0.72, 0.22, 0.72], scale: [0.22, 0.32, 0.18] },
+    ]
+  },
+  {
+    id: 'buccinator',
+    name: 'Buccinator',
+    latin: 'Musculus buccinator',
+    color: '#7c3aed',
+    function: 'Compresses the cheeks against the teeth. Essential for chewing, blowing, and playing wind instruments. Keeps food between molars.',
+    expressions: 'Blowing, whistling, sucking, playing trumpet',
+    regions: [
+      { pos: [-0.55, 0.3, 0.82], scale: [0.2, 0.22, 0.1] },
+      { pos: [0.55, 0.3, 0.82], scale: [0.2, 0.22, 0.1] },
+    ]
+  },
+  {
+    id: 'orbicularis-oris',
+    name: 'Orbicularis Oris',
+    latin: 'Musculus orbicularis oris',
+    color: '#e11d48',
+    function: 'Closes the lips and compresses them against the teeth. Also protrudes the lips. The only sphincter muscle of the face.',
+    expressions: 'Kissing, whistling, pouting, speaking, eating',
+    regions: [
+      { pos: [0, 0.28, 1.0], scale: [0.32, 0.16, 0.07] },
+    ]
+  },
+  {
+    id: 'risorius',
+    name: 'Risorius',
+    latin: 'Musculus risorius',
+    color: '#0ea5e9',
+    function: 'Retracts the angle of the mouth laterally, producing a grinning or smirking expression. Creates dimples in some people.',
+    expressions: 'Grinning, smirking, false smile',
+    regions: [
+      { pos: [-0.5, 0.28, 0.86], scale: [0.14, 0.08, 0.06], rotZ: 0.1 },
+      { pos: [0.5, 0.28, 0.86], scale: [0.14, 0.08, 0.06], rotZ: -0.1 },
+    ]
+  },
+  {
+    id: 'depressor-anguli',
+    name: 'Depressor Anguli Oris',
+    latin: 'Musculus depressor anguli oris',
+    color: '#64748b',
+    function: 'Draws the angle of the mouth downward and laterally. Sometimes called the "frown muscle".',
+    expressions: 'Frowning, sadness, displeasure',
+    regions: [
+      { pos: [-0.4, 0.12, 0.92], scale: [0.14, 0.14, 0.07], rotZ: -0.4 },
+      { pos: [0.4, 0.12, 0.92], scale: [0.14, 0.14, 0.07], rotZ: 0.4 },
+    ]
+  },
+  {
+    id: 'depressor-labii',
+    name: 'Depressor Labii Inferioris',
+    latin: 'Musculus depressor labii inferioris',
+    color: '#475569',
+    function: 'Depresses the lower lip and moves it laterally. Exposes the mandibular teeth.',
+    expressions: 'Disgust, doubt, "meh" expression',
+    regions: [
+      { pos: [-0.18, 0.15, 0.98], scale: [0.14, 0.1, 0.06] },
+      { pos: [0.18, 0.15, 0.98], scale: [0.14, 0.1, 0.06] },
+    ]
+  },
+  {
+    id: 'mentalis',
+    name: 'Mentalis',
+    latin: 'Musculus mentalis',
+    color: '#a3e635',
+    function: 'Raises and wrinkles the skin of the chin, and protrudes the lower lip. Helps express doubt or displeasure.',
+    expressions: 'Pouting, doubt, chin wrinkling, "thinking" face',
+    regions: [
+      { pos: [0, 0.0, 0.96], scale: [0.2, 0.12, 0.07] },
+    ]
+  },
+  {
+    id: 'platysma',
+    name: 'Platysma',
+    latin: 'Musculus platysma',
+    color: '#fbbf24',
+    function: 'A broad sheet of muscle in the neck. Depresses the mandible, draws down the lower lip and corners of the mouth. Tenses the neck skin.',
+    expressions: 'Extreme effort, horror, grimacing, aging neck bands',
+    regions: [
+      { pos: [-0.22, -0.45, 0.7], scale: [0.2, 0.35, 0.12] },
+      { pos: [0.22, -0.45, 0.7], scale: [0.2, 0.35, 0.12] },
+    ]
+  },
+];
+
+// ── Scene Setup ──────────────────────────────────────────────────────────────
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0e1a);
+scene.fog = new THREE.Fog(0x0a0e1a, 8, 20);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 0.3, 4.5);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.minDistance = 2;
+controls.maxDistance = 8;
+controls.target.set(0, 0.2, 0);
+controls.update();
+
+// ── Lighting ──────────────────────────────────────────────────────────────
+const ambientLight = new THREE.AmbientLight(0x334155, 1.2);
+scene.add(ambientLight);
+
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
+keyLight.position.set(2, 3, 4);
+keyLight.castShadow = true;
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.5);
+fillLight.position.set(-3, 1, 2);
+scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight(0xa78bfa, 0.4);
+rimLight.position.set(0, 2, -3);
+scene.add(rimLight);
+
+const pointLight = new THREE.PointLight(0x60a5fa, 0.3, 10);
+pointLight.position.set(0, 3, 2);
+scene.add(pointLight);
+
+// ── Head Group ──────────────────────────────────────────────────────────────
+const headGroup = new THREE.Group();
+scene.add(headGroup);
+
+// Skull/skin base
+function buildHead() {
+  const group = new THREE.Group();
+
+  // Cranium (upper skull)
+  const craniumGeo = new THREE.SphereGeometry(1.0, 64, 64);
+  const skinMat = new THREE.MeshPhongMaterial({
+    color: 0xd4a574,
+    shininess: 15,
+    specular: 0x222222,
+  });
+
+  // Scale to head proportions
+  const cranium = new THREE.Mesh(craniumGeo, skinMat);
+  cranium.scale.set(1, 1.15, 1);
+  cranium.castShadow = true;
+  cranium.receiveShadow = true;
+  group.add(cranium);
+
+  // Face (slightly protruding)
+  const faceGeo = new THREE.SphereGeometry(0.92, 64, 64, 0, Math.PI * 2, 0, Math.PI * 0.65);
+  const face = new THREE.Mesh(faceGeo, skinMat);
+  face.scale.set(1, 1.0, 1.08);
+  face.position.set(0, -0.08, 0.02);
+  group.add(face);
+
+  // Jaw
+  const jawGeo = new THREE.SphereGeometry(0.75, 32, 32);
+  const jaw = new THREE.Mesh(jawGeo, skinMat);
+  jaw.scale.set(0.92, 0.7, 0.9);
+  jaw.position.set(0, -0.55, 0.08);
+  group.add(jaw);
+
+  // Chin
+  const chinGeo = new THREE.SphereGeometry(0.3, 32, 32);
+  const chin = new THREE.Mesh(chinGeo, skinMat);
+  chin.scale.set(0.7, 0.55, 0.65);
+  chin.position.set(0, -0.82, 0.38);
+  group.add(chin);
+
+  // Nose bridge
+  const noseGeo = new THREE.SphereGeometry(0.18, 16, 16);
+  const nose = new THREE.Mesh(noseGeo, skinMat);
+  nose.scale.set(0.7, 0.9, 1.2);
+  nose.position.set(0, 0.55, 0.98);
+  group.add(nose);
+
+  // Nose tip
+  const noseTipGeo = new THREE.SphereGeometry(0.16, 16, 16);
+  const noseTip = new THREE.Mesh(noseTipGeo, skinMat);
+  noseTip.scale.set(1.1, 0.8, 1.0);
+  noseTip.position.set(0, 0.38, 1.04);
+  group.add(noseTip);
+
+  // Nostrils
+  const nostrilMat = new THREE.MeshPhongMaterial({ color: 0xb8956a });
+  [-0.12, 0.12].forEach(x => {
+    const nostrilGeo = new THREE.SphereGeometry(0.09, 12, 12);
+    const nostril = new THREE.Mesh(nostrilGeo, nostrilMat);
+    nostril.scale.set(0.8, 0.6, 1.0);
+    nostril.position.set(x, 0.34, 1.0);
+    group.add(nostril);
+  });
+
+  // Lips
+  const lipMat = new THREE.MeshPhongMaterial({ color: 0xc2614e, shininess: 25 });
+  const upperLipGeo = new THREE.SphereGeometry(0.28, 16, 16);
+  const upperLip = new THREE.Mesh(upperLipGeo, lipMat);
+  upperLip.scale.set(1.1, 0.55, 0.65);
+  upperLip.position.set(0, 0.2, 1.01);
+  group.add(upperLip);
+
+  const lowerLipGeo = new THREE.SphereGeometry(0.28, 16, 16);
+  const lowerLip = new THREE.Mesh(lowerLipGeo, lipMat);
+  lowerLip.scale.set(1.2, 0.58, 0.68);
+  lowerLip.position.set(0, 0.1, 1.0);
+  group.add(lowerLip);
+
+  // Eye sockets (darker)
+  const socketMat = new THREE.MeshPhongMaterial({ color: 0xc29060 });
+  [-0.3, 0.3].forEach(x => {
+    const socketGeo = new THREE.SphereGeometry(0.2, 16, 16);
+    const socket = new THREE.Mesh(socketGeo, socketMat);
+    socket.scale.set(1.2, 0.8, 0.6);
+    socket.position.set(x, 0.78, 0.92);
+    group.add(socket);
+  });
+
+  // Eyeballs
+  const eyeWhiteMat = new THREE.MeshPhongMaterial({ color: 0xf0e8dc });
+  const irisMat = new THREE.MeshPhongMaterial({ color: 0x5b4d8a });
+  [-0.3, 0.3].forEach(x => {
+    const eyeGeo = new THREE.SphereGeometry(0.14, 16, 16);
+    const eye = new THREE.Mesh(eyeGeo, eyeWhiteMat);
+    eye.scale.set(1, 0.85, 0.7);
+    eye.position.set(x, 0.79, 0.94);
+    group.add(eye);
+
+    const irisGeo = new THREE.SphereGeometry(0.09, 12, 12);
+    const iris = new THREE.Mesh(irisGeo, irisMat);
+    iris.position.set(x, 0.79, 0.98);
+    iris.scale.set(1, 0.85, 0.5);
+    group.add(iris);
+  });
+
+  // Ears
+  const earMat = new THREE.MeshPhongMaterial({ color: 0xc8956a });
+  [-1.02, 1.02].forEach(x => {
+    const earGeo = new THREE.SphereGeometry(0.25, 16, 16);
+    const ear = new THREE.Mesh(earGeo, earMat);
+    ear.scale.set(0.4, 0.65, 0.3);
+    ear.position.set(x, 0.25, 0.1);
+    group.add(ear);
+  });
+
+  // Neck
+  const neckGeo = new THREE.CylinderGeometry(0.38, 0.42, 0.7, 32);
+  const neck = new THREE.Mesh(neckGeo, skinMat);
+  neck.position.set(0, -1.1, 0.0);
+  group.add(neck);
+
+  // Eyebrows
+  const browMat = new THREE.MeshPhongMaterial({ color: 0x6b4226 });
+  [-0.3, 0.3].forEach(x => {
+    const browGeo = new THREE.BoxGeometry(0.22, 0.04, 0.04);
+    const brow = new THREE.Mesh(browGeo, browMat);
+    brow.position.set(x, 0.92, 0.95);
+    brow.rotation.z = x < 0 ? 0.1 : -0.1;
+    group.add(brow);
+  });
+
+  return group;
+}
+
+const headMesh = buildHead();
+headGroup.add(headMesh);
+
+// ── Muscle Meshes ──────────────────────────────────────────────────────────
+const muscleObjects = []; // {mesh, muscleData}
+
+MUSCLES.forEach(muscle => {
+  muscle.regions.forEach((region, idx) => {
+    const geo = new THREE.SphereGeometry(1, 24, 24);
+    const mat = new THREE.MeshPhongMaterial({
+      color: new THREE.Color(muscle.color),
+      transparent: true,
+      opacity: 0.72,
+      shininess: 30,
+      specular: new THREE.Color(muscle.color).multiplyScalar(0.3),
+      side: THREE.FrontSide,
+    });
+
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(...region.pos);
+    mesh.scale.set(...region.scale);
+    if (region.rotZ) mesh.rotation.z = region.rotZ;
+    if (region.rotX) mesh.rotation.x = region.rotX;
+    mesh.castShadow = true;
+
+    mesh.userData = {
+      muscleId: muscle.id,
+      originalColor: muscle.color,
+      originalOpacity: 0.72,
+    };
+
+    headGroup.add(mesh);
+    muscleObjects.push({ mesh, muscle });
+  });
+});
+
+// ── Legend ─────────────────────────────────────────────────────────────────
+const legendContainer = document.getElementById('legend-items');
+MUSCLES.forEach(muscle => {
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  item.id = `legend-${muscle.id}`;
+  item.innerHTML = `<div class="legend-dot" style="background:${muscle.color}"></div>${muscle.name}`;
+  item.addEventListener('click', () => highlightMuscle(muscle));
+  legendContainer.appendChild(item);
+});
+
+// ── Raycasting & Interaction ───────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let currentHighlight = null;
+let selectedMuscleId = null;
+
+function highlightMuscle(muscle) {
+  // Reset all
+  muscleObjects.forEach(({ mesh }) => {
+    mesh.material.emissive = new THREE.Color(0x000000);
+    mesh.material.opacity = 0.72;
+    mesh.scale.setScalar(mesh.scale.x); // no change
+  });
+
+  // Remove old legend active
+  document.querySelectorAll('.legend-item').forEach(el => el.classList.remove('active'));
+
+  selectedMuscleId = muscle.id;
+
+  // Highlight matching
+  muscleObjects.forEach(({ mesh, muscle: m }) => {
+    if (m.id === muscle.id) {
+      mesh.material.emissive = new THREE.Color(muscle.color).multiplyScalar(0.4);
+      mesh.material.opacity = 0.95;
+    } else {
+      mesh.material.opacity = 0.35;
+    }
+  });
+
+  // Update legend
+  const legendItem = document.getElementById(`legend-${muscle.id}`);
+  if (legendItem) legendItem.classList.add('active');
+
+  // Update info panel
+  document.getElementById('muscle-name').textContent = muscle.name;
+  document.getElementById('muscle-name').style.color = muscle.color;
+  document.getElementById('muscle-latin').textContent = muscle.latin;
+  document.getElementById('muscle-function').textContent = muscle.function;
+  document.getElementById('muscle-function').style.color = '#cbd5e1';
+  document.getElementById('muscle-expressions').textContent = muscle.expressions;
+}
+
+function resetHighlight() {
+  muscleObjects.forEach(({ mesh }) => {
+    mesh.material.emissive = new THREE.Color(0x000000);
+    mesh.material.opacity = 0.72;
+  });
+  document.querySelectorAll('.legend-item').forEach(el => el.classList.remove('active'));
+  selectedMuscleId = null;
+  document.getElementById('muscle-name').textContent = 'Click a muscle to learn more';
+  document.getElementById('muscle-name').style.color = '#475569';
+  document.getElementById('muscle-latin').textContent = '';
+  document.getElementById('muscle-function').textContent = 'Hover or click any highlighted area on the 3D model.';
+  document.getElementById('muscle-function').style.color = '#475569';
+  document.getElementById('muscle-expressions').textContent = '';
+}
+
+renderer.domElement.addEventListener('click', (e) => {
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const meshes = muscleObjects.map(o => o.mesh);
+  const intersects = raycaster.intersectObjects(meshes);
+
+  if (intersects.length > 0) {
+    const hit = intersects[0].object;
+    const muscleId = hit.userData.muscleId;
+    if (muscleId === selectedMuscleId) {
+      resetHighlight();
+    } else {
+      const muscle = MUSCLES.find(m => m.id === muscleId);
+      if (muscle) highlightMuscle(muscle);
+    }
+  } else {
+    resetHighlight();
+  }
+});
+
+// Hover effect
+renderer.domElement.addEventListener('mousemove', (e) => {
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const meshes = muscleObjects.map(o => o.mesh);
+  const intersects = raycaster.intersectObjects(meshes);
+
+  if (intersects.length > 0) {
+    renderer.domElement.style.cursor = 'pointer';
+    const hit = intersects[0].object;
+    const muscleId = hit.userData.muscleId;
+    if (muscleId !== selectedMuscleId && muscleId !== currentHighlight) {
+      if (currentHighlight) {
+        muscleObjects.forEach(({ mesh, muscle: m }) => {
+          if (m.id === currentHighlight && m.id !== selectedMuscleId) {
+            mesh.material.emissive = new THREE.Color(0x000000);
+          }
+        });
+      }
+      currentHighlight = muscleId;
+      muscleObjects.forEach(({ mesh, muscle: m }) => {
+        if (m.id === muscleId && m.id !== selectedMuscleId) {
+          mesh.material.emissive = new THREE.Color(hit.userData.originalColor).multiplyScalar(0.25);
+        }
+      });
+    }
+  } else {
+    renderer.domElement.style.cursor = 'default';
+    if (currentHighlight && currentHighlight !== selectedMuscleId) {
+      muscleObjects.forEach(({ mesh, muscle: m }) => {
+        if (m.id === currentHighlight) {
+          mesh.material.emissive = new THREE.Color(0x000000);
+        }
+      });
+      currentHighlight = null;
+    }
+  }
+});
+
+// ── Grid ───────────────────────────────────────────────────────────────────
+const gridHelper = new THREE.GridHelper(10, 20, 0x1e293b, 0x0f172a);
+gridHelper.position.y = -1.8;
+scene.add(gridHelper);
+
+// ── Resize ────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ── Animation ─────────────────────────────────────────────────────────────
+let autoRotate = true;
+controls.addEventListener('start', () => { autoRotate = false; });
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (autoRotate) headGroup.rotation.y += 0.003;
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
